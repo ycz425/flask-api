@@ -9,6 +9,7 @@ htmlcov/
 .tox/
 docs/_build/
 .env
+.DS_Store
 privateinfobutidc.json
 
 chroma_db

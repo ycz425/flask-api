@@ -1,5 +1,6 @@
 node_modules/
-venv/
+.venv*/
+venv*/
 .git/
 .cache/
 logs/
