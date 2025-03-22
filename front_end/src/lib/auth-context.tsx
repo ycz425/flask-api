@@ -30,10 +30,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Create the user data object
+      const userData = {
+        googleUid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      };
+
+      // Send POST request to Flask backend API
+      try {
+        const response = await axios({
+          method: 'post',
+          url: 'http://localhost:5000/api/users',
+          data: userData,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (response.status === 201 && response.data.userId) {
+          console.log('User created successfully:', response.data);
+          // You can store the userId in local storage or state if needed
+          localStorage.setItem('userId', response.data.userId);
+        } else {
+          throw new Error('Invalid response from server');
+        }
+        
+      } catch (error: any) {
+        console.error('Error creating user:', error.response?.data?.error || error.message);
+        throw new Error('Failed to create user in database');
+      }
+
     } catch (error) {
       console.error('Error signing in with Google:', error);
       throw error;
