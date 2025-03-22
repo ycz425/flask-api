@@ -5,6 +5,7 @@ import TabContainer, { TabPanel } from '@/components/TabContainer';
 import FileUploader from '@/components/FileUploader';
 import SummaryViewer from '@/components/SummaryViewer';
 import Quiz from '@/components/Quiz';
+import QuizParameters, { QuizParameters as QuizParametersType } from '@/components/QuizParameters';
 import AssessmentSection from '@/components/AssessmentSection';
 import ChatSection from '@/components/ChatSection';
 import CourseSettingsModal from '@/components/CourseSettingsModal';
@@ -110,40 +111,15 @@ const mockCourses = {
   }
 };
 
-const quizDifficulties = [
-  {
-    level: "easy",
-    isUnlocked: true,
-    title: "Basic Concepts",
-    description: "Test your knowledge of fundamental course concepts",
-    questionsCount: 10
-  },
-  {
-    level: "medium",
-    isUnlocked: false,
-    title: "Intermediate Application",
-    description: "Apply concepts to solve more complex problems",
-    questionsCount: 8
-  },
-  {
-    level: "hard",
-    isUnlocked: false,
-    title: "Advanced Analysis",
-    description: "Analyze and evaluate complex scenarios",
-    questionsCount: 6
-  }
-];
-
 const CourseDetail: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const [activeTab, setActiveTab] = useState("summary");
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showingQuiz, setShowingQuiz] = useState(false);
-  const [quizDifficulty, setQuizDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
-  const [unlockedLevels, setUnlockedLevels] = useState({
-    easy: true,
-    medium: false,
-    hard: false
+  const [quizParameters, setQuizParameters] = useState<QuizParametersType>({
+    difficulty: 'easy',
+    fromLecture: 1,
+    toLecture: 5
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -191,23 +167,16 @@ const CourseDetail: React.FC = () => {
   const handleQuizComplete = (score: number, totalQuestions: number) => {
     const percentage = (score / totalQuestions) * 100;
     
-    if (percentage === 100) {
-      if (quizDifficulty === 'easy' && !unlockedLevels.medium) {
-        setUnlockedLevels(prev => ({ ...prev, medium: true }));
-        toast({
-          title: "Medium Difficulty Unlocked!",
-          description: "You've unlocked the intermediate difficulty quiz.",
-          duration: 3000,
-        });
-      } else if (quizDifficulty === 'medium' && !unlockedLevels.hard) {
-        setUnlockedLevels(prev => ({ ...prev, hard: true }));
-        toast({
-          title: "Hard Difficulty Unlocked!",
-          description: "You've unlocked the advanced difficulty quiz.",
-          duration: 3000,
-        });
-      }
-    }
+    toast({
+      title: "Quiz Completed",
+      description: `You scored ${score} out of ${totalQuestions} (${percentage.toFixed(0)}%)`,
+      duration: 3000,
+    });
+  };
+
+  const handleStartQuiz = (parameters: QuizParametersType) => {
+    setQuizParameters(parameters);
+    setShowingQuiz(true);
   };
 
   const handleReturnFromQuiz = () => {
@@ -271,11 +240,6 @@ const CourseDetail: React.FC = () => {
     });
   };
 
-  const handleStartQuiz = (difficulty: 'easy' | 'medium' | 'hard') => {
-    setQuizDifficulty(difficulty);
-    setShowingQuiz(true);
-  };
-
   return (
     <div className="min-h-screen bg-pattern animate-fade-in">
       <Navbar />
@@ -337,14 +301,14 @@ const CourseDetail: React.FC = () => {
           >
             <TabPanel id="summary">
               <div className="p-1">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div className="col-span-1 md:col-span-2">
-                    <h2 className="text-lg font-semibold mb-3 flex items-center">
+                    <h2 className="text-lg font-semibold mb-1 flex items-center">
                       <BookOpen className="h-5 w-5 mr-2" />
                       Course Overview
                     </h2>
                     
-                    <div className="h-[calc(100vh-350px)] overflow-auto">
+                    <div className="h-[480px]">
                       <ChatSection />
                     </div>
                   </div>
@@ -372,7 +336,7 @@ const CourseDetail: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     {course.assignments && course.assignments.length > 0 && (
                       <div className="mb-3">
                         <h2 className="text-lg font-semibold mb-2 flex items-center">
@@ -653,47 +617,13 @@ const CourseDetail: React.FC = () => {
                 
                 {showingQuiz ? (
                   <Quiz 
-                    difficulty={quizDifficulty} 
+                    parameters={quizParameters}
                     onComplete={handleQuizComplete}
-                    showQuizContent={true}
+                    onReturn={handleReturnFromQuiz}
                   />
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {quizDifficulties.map((difficulty, index) => {
-                      const isUnlocked = index === 0 ? true : 
-                                        index === 1 ? unlockedLevels.medium : 
-                                        unlockedLevels.hard;
-                      
-                      return (
-                        <div 
-                          key={difficulty.level}
-                          className={`border rounded-lg overflow-hidden shadow-soft ${!isUnlocked ? 'opacity-70' : ''}`}
-                        >
-                          <div className={`p-4 ${difficulty.level === 'easy' ? 'bg-green-50' : difficulty.level === 'medium' ? 'bg-yellow-50' : 'bg-red-50'}`}>
-                            <h3 className="font-semibold">{difficulty.title}</h3>
-                          </div>
-                          <div className="p-4">
-                            <p className="text-sm text-muted-foreground mb-4">{difficulty.description}</p>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">{difficulty.questionsCount} questions</span>
-                              {isUnlocked ? (
-                                <Button 
-                                  size="sm" 
-                                  onClick={() => handleStartQuiz(difficulty.level as 'easy' | 'medium' | 'hard')}
-                                >
-                                  Start Quiz
-                                </Button>
-                              ) : (
-                                <div className="flex items-center text-sm text-muted-foreground gap-1.5">
-                                  <Clock className="h-4 w-4" />
-                                  <span>Locked</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="max-w-xl mx-auto">
+                    <QuizParameters onStartQuiz={handleStartQuiz} />
                   </div>
                 )}
               </div>

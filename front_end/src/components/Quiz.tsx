@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, AlertCircle, BrainCircuit, Award, Clock, ArrowLeft } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { QuizParameters } from './QuizParameters';
 
 interface QuizQuestion {
   id: string;
@@ -14,17 +14,19 @@ interface QuizQuestion {
   options?: string[];
   correctAnswer?: number | string;
   type: 'multiple-choice' | 'short-answer' | 'long-answer';
+  lectureNumber?: number;
 }
 
 interface QuizProps {
   questions?: QuizQuestion[];
-  difficulty: 'easy' | 'medium' | 'hard';
+  parameters: QuizParameters;
   onComplete?: (score: number, totalQuestions: number) => void;
-  showQuizContent?: boolean;
+  onReturn: () => void;
 }
 
 // Mock questions for different difficulty levels
-const easyQuestions: QuizQuestion[] = [
+const allQuestions: QuizQuestion[] = [
+  // Easy questions
   {
     id: "easy1",
     question: "What is the primary purpose of an algorithm?",
@@ -35,7 +37,8 @@ const easyQuestions: QuizQuestion[] = [
       "To design hardware"
     ],
     correctAnswer: 1,
-    type: 'multiple-choice'
+    type: 'multiple-choice',
+    lectureNumber: 1
   },
   {
     id: "easy2",
@@ -47,7 +50,8 @@ const easyQuestions: QuizQuestion[] = [
       "Tree"
     ],
     correctAnswer: 1,
-    type: 'multiple-choice'
+    type: 'multiple-choice',
+    lectureNumber: 2
   },
   {
     id: "easy3",
@@ -59,38 +63,79 @@ const easyQuestions: QuizQuestion[] = [
       "Control Processing Unit"
     ],
     correctAnswer: 0,
-    type: 'multiple-choice'
-  }
-];
-
-const mediumQuestions: QuizQuestion[] = [
+    type: 'multiple-choice',
+    lectureNumber: 3
+  },
+  // Medium questions
   {
     id: "medium1",
     question: "Explain the difference between a stack and a queue data structure.",
     type: 'short-answer',
-    correctAnswer: "stack queue LIFO FIFO"
+    correctAnswer: "stack queue LIFO FIFO",
+    lectureNumber: 4
   },
   {
     id: "medium2",
     question: "What is recursion and provide a simple example of a recursive function.",
     type: 'short-answer',
-    correctAnswer: "recursion function calls itself factorial fibonacci"
-  }
-];
-
-const hardQuestions: QuizQuestion[] = [
+    correctAnswer: "recursion function calls itself factorial fibonacci",
+    lectureNumber: 5
+  },
+  // Hard questions
   {
     id: "hard1",
     question: "Analyze the time and space complexity of quicksort algorithm. Discuss its best, average, and worst case scenarios and compare it with other sorting algorithms.",
     type: 'long-answer',
-    correctAnswer: "quicksort O(n log n) O(n²) partitioning pivot comparison"
+    correctAnswer: "quicksort O(n log n) O(n²) partitioning pivot comparison",
+    lectureNumber: 6
+  },
+  // Additional questions for lecture coverage
+  {
+    id: "q7",
+    question: "What is the purpose of the Model-View-Controller (MVC) pattern?",
+    options: [
+      "To organize database schemas",
+      "To separate concerns in software design",
+      "To optimize code performance",
+      "To create user interfaces"
+    ],
+    correctAnswer: 1,
+    type: 'multiple-choice',
+    lectureNumber: 7
+  },
+  {
+    id: "q8",
+    question: "Explain the concept of encapsulation in object-oriented programming.",
+    type: 'short-answer',
+    correctAnswer: "encapsulation data hiding access modifiers private public",
+    lectureNumber: 8
+  },
+  {
+    id: "q9",
+    question: "What is the primary purpose of version control systems like Git?",
+    options: [
+      "To compile code",
+      "To track changes to files over time",
+      "To debug applications",
+      "To host web applications"
+    ],
+    correctAnswer: 1,
+    type: 'multiple-choice',
+    lectureNumber: 9
+  },
+  {
+    id: "q10",
+    question: "Describe the differences between SQL and NoSQL databases.",
+    type: 'short-answer',
+    correctAnswer: "SQL relational schema NoSQL document flexible",
+    lectureNumber: 10
   }
 ];
 
 const Quiz: React.FC<QuizProps> = ({ 
-  difficulty, 
+  parameters, 
   onComplete = () => {}, 
-  showQuizContent = false,
+  onReturn,
   questions: customQuestions
 }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -100,31 +145,47 @@ const Quiz: React.FC<QuizProps> = ({
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-  const [showQuizList, setShowQuizList] = useState(false);
 
   useEffect(() => {
-    // Set questions based on difficulty or use custom questions if provided
+    // If custom questions are provided, use them
     if (customQuestions && customQuestions.length > 0) {
       setQuestions(customQuestions);
-    } else {
-      switch (difficulty) {
-        case 'easy':
-          setQuestions(easyQuestions);
-          break;
-        case 'medium':
-          setQuestions(mediumQuestions);
-          break;
-        case 'hard':
-          setQuestions(hardQuestions);
-          break;
-      }
+      return;
     }
-  }, [difficulty, customQuestions]);
-  
-  // If not showing quiz content, just return empty
-  if (!showQuizContent) {
-    return null;
-  }
+    
+    // Otherwise, filter questions based on parameters
+    const filteredByLecture = allQuestions.filter(
+      q => q.lectureNumber && 
+      q.lectureNumber >= parameters.fromLecture && 
+      q.lectureNumber <= parameters.toLecture
+    );
+    
+    // Further filter by difficulty
+    let difficultyFiltered: QuizQuestion[];
+    switch (parameters.difficulty) {
+      case 'easy':
+        difficultyFiltered = filteredByLecture.filter(q => q.id.startsWith('easy') || !q.id.startsWith('medium') && !q.id.startsWith('hard'));
+        break;
+      case 'medium':
+        difficultyFiltered = filteredByLecture.filter(q => q.id.startsWith('medium') || (q.type === 'multiple-choice' && !q.id.startsWith('easy')));
+        break;
+      case 'hard':
+        difficultyFiltered = filteredByLecture.filter(q => q.id.startsWith('hard') || q.type === 'long-answer');
+        break;
+      default:
+        difficultyFiltered = filteredByLecture;
+    }
+    
+    // If no questions match the criteria, fall back to a default set
+    if (difficultyFiltered.length === 0) {
+      // Just use all questions that match the lecture range
+      difficultyFiltered = filteredByLecture;
+    }
+    
+    // Limit to a reasonable number of questions
+    const selected = difficultyFiltered.slice(0, 5);
+    setQuestions(selected);
+  }, [parameters, customQuestions]);
   
   const handleOptionSelect = (optionIndex: number) => {
     if (!isAnswered) {
@@ -193,13 +254,9 @@ const Quiz: React.FC<QuizProps> = ({
     setScore(0);
     setIsCompleted(false);
   };
-
-  const handleReturnToQuizList = () => {
-    setShowQuizList(true);
-  };
   
   const getDifficultyColor = () => {
-    switch (difficulty) {
+    switch (parameters.difficulty) {
       case 'easy': return 'text-green-500';
       case 'medium': return 'text-yellow-500';
       case 'hard': return 'text-red-500';
@@ -208,18 +265,13 @@ const Quiz: React.FC<QuizProps> = ({
   };
   
   const getDifficultyTitle = () => {
-    switch (difficulty) {
+    switch (parameters.difficulty) {
       case 'easy': return 'Basic Concepts';
       case 'medium': return 'Intermediate Application';
       case 'hard': return 'Advanced Analysis';
       default: return 'Quiz';
     }
   };
-
-  if (showQuizList) {
-    // Return null to trigger the parent component to return to quiz list
-    return null;
-  }
 
   if (isCompleted) {
     const percentage = (score / questions.length) * 100;
@@ -243,7 +295,7 @@ const Quiz: React.FC<QuizProps> = ({
           
           {isPerfect && (
             <p className="text-green-500 font-medium mb-4">
-              Perfect score! Next difficulty level unlocked.
+              Perfect score! Excellent work.
             </p>
           )}
           
@@ -256,7 +308,7 @@ const Quiz: React.FC<QuizProps> = ({
           
           <div className="flex flex-wrap gap-3 justify-center">
             <Button onClick={resetQuiz} className="px-8">Try Again</Button>
-            <Button onClick={handleReturnToQuizList} variant="outline">Return to Quiz Selection</Button>
+            <Button onClick={onReturn} variant="outline">Return to Parameters</Button>
           </div>
         </CardContent>
       </Card>
@@ -267,7 +319,10 @@ const Quiz: React.FC<QuizProps> = ({
     return (
       <div className="text-center py-8">
         <BrainCircuit className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">Loading questions...</p>
+        <p className="text-muted-foreground">No questions match your criteria</p>
+        <Button onClick={onReturn} variant="outline" className="mt-4">
+          Adjust Parameters
+        </Button>
       </div>
     );
   }
@@ -289,11 +344,11 @@ const Quiz: React.FC<QuizProps> = ({
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={handleReturnToQuizList}
+            onClick={onReturn}
             className="flex items-center gap-1"
           >
             <ArrowLeft className="h-4 w-4" />
-            Return to Quiz Selection
+            Adjust Parameters
           </Button>
           <div className="text-sm font-medium">
             Score: {score}

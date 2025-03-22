@@ -73,14 +73,14 @@ const ChatSection: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[600px] border rounded-lg">
-      <div className="bg-muted/30 p-3 border-b">
+    <div className="flex flex-col h-[500px] border rounded-lg">
+      <div className="bg-muted/30 p-2 border-b">
         <h3 className="font-medium">Course Assistant</h3>
         <p className="text-xs text-muted-foreground">Ask questions about your course</p>
       </div>
       
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
+      <ScrollArea className="flex-1 p-3">
+        <div className="space-y-3">
           {messages.map((message) => (
             <div 
               key={message.id}
