@@ -135,7 +135,7 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
         </DialogHeader>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
+          <TabsList className="grid grid-cols-2">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="schedule">Schedule</TabsTrigger>
           </TabsList>
