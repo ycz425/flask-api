@@ -2,5 +2,10 @@ flask
 google
 google-api-python-client
 PyPDF2
+python-pptx
+python-docx
 python-dotenv
 google-generativeai
+chromadb
+sentence-transformers
+python-magic
