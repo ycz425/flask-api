@@ -11,14 +11,6 @@ docs/_build/
 .env
 .DS_Store
 privateinfobutidc.json
-
-node_modules
-*.log
+node_modules/
 
 chroma_db
-
-dist
-.vit
-stats.html
-.eslintcache
-

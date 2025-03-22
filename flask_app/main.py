@@ -1,7 +1,7 @@
 # main.py
 import sys
-from pdf_processor import extract_due_dates
-from calendar_integration import add_events
+from flask_app.pdf_processor import extract_due_dates
+from flask_app.calendar_integration import add_events
 
 
 def main():
