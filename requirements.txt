@@ -1,1 +1,6 @@
 flask
+google
+google-api-python-client
+PyPDF2
+python-dotenv
+google-generativeai
