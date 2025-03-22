@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   User
 } from 'firebase/auth';
+import { insertUser } from '@/api/api'
 import { auth } from './firebase';
 
 interface AuthContextType {
@@ -46,26 +47,18 @@ const signInWithGoogle = async () => {
 
       // Send POST request to Flask backend API
       try {
-        const response = await axios({
-          method: 'post',
-          url: 'http://localhost:5000/api/users',
-          data: userData,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
+        const data = await insertUser(userData);
         
-        if (response.status === 201 && response.data.userId) {
-          console.log('User created successfully:', response.data);
+        if (data.userId) {
+          console.log('User created successfully:', data);
           // You can store the userId in local storage or state if needed
-          localStorage.setItem('userId', response.data.userId);
+          localStorage.setItem('userId', data.userId);
         } else {
           throw new Error('Invalid response from server');
         }
         
       } catch (error: any) {
-        console.error('Error creating user:', error.response?.data?.error || error.message);
+        console.error('Error creating user:', error.data?.error || error.message);
         throw new Error('Failed to create user in database');
       }
 
