@@ -21,6 +21,8 @@ def root():
 def upload_file():
     """Handles user file uploads."""
     file = request.files.get("file")
+    course = request.form.get("course")
+    # TODO: add other useful file metadata
 
     if not file:
         return jsonify({"error": "No file provided"}), 400
