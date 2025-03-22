@@ -1,4 +1,4 @@
-from PyPDF2 import PdfReader
+import pdfplumber
 from pptx import Presentation
 from docx import Document
 
@@ -15,10 +15,10 @@ def extract_text(file):
         
 
 def extract_text_from_pdf(file):
-    reader = PdfReader(file)
     text = ""
-    for page in reader.pages:
-        text += page.extract_text()
+    with pdfplumber.open(file) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text()
     return text
 
 
