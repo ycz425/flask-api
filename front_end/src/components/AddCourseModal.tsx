@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import TimeSelector from './TimeSelector';
+import TimeSelector, { TimeSlot } from './TimeSelector';
 import { FileUp } from 'lucide-react';
 
 interface AddCourseModalProps {
@@ -25,10 +25,8 @@ interface AddCourseModalProps {
 const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave }) => {
   const [courseName, setCourseName] = useState('');
   const [description, setDescription] = useState('');
-  const [lectureTimes, setLectureTimes] = useState<Array<{day: string, time: string}>>([]);
-  const [tutorialTimes, setTutorialTimes] = useState<Array<{day: string, time: string}>>([]);
-  const [officeHourTimes, setOfficeHourTimes] = useState<Array<{day: string, time: string}>>([]);
-  const [studySessionTimes, setStudySessionTimes] = useState<Array<{day: string, time: string}>>([]);
+  const [instructor, setInstructor] = useState('');
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [syllabus, setSyllabus] = useState<File | null>(null);
   
   const handleSyllabusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,17 +36,24 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
   };
   
   const handleSubmit = () => {
+    // Separate time slots by type
+    const lectureTimes = timeSlots.filter(slot => slot.type === 'lecture');
+    const tutorialTimes = timeSlots.filter(slot => slot.type === 'tutorial');
+    const officeHourTimes = timeSlots.filter(slot => slot.type === 'office_hour');
+    const studySessionTimes = timeSlots.filter(slot => slot.type === 'study_session');
+    
     // Create a course object with all the data
     const courseData = {
       id: Date.now().toString(),
       title: courseName,
       description,
+      instructor,
       lectureTimes,
       tutorialTimes,
       officeHourTimes,
       studySessionTimes,
       syllabus: syllabus ? syllabus.name : null,
-      // In a real app, you would upload the syllabus file to a server here
+      hasSyllabus: !!syllabus
     };
     
     onSave(courseData);
@@ -56,10 +61,8 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
     // Reset form
     setCourseName('');
     setDescription('');
-    setLectureTimes([]);
-    setTutorialTimes([]);
-    setOfficeHourTimes([]);
-    setStudySessionTimes([]);
+    setInstructor('');
+    setTimeSlots([]);
     setSyllabus(null);
     
     onClose();
@@ -84,6 +87,17 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
                 placeholder="e.g., Introduction to Computer Science"
                 value={courseName}
                 onChange={(e) => setCourseName(e.target.value)}
+                className="animate-fade-in"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="instructor">Instructor</Label>
+              <Input
+                id="instructor"
+                placeholder="e.g., Professor Smith"
+                value={instructor}
+                onChange={(e) => setInstructor(e.target.value)}
                 className="animate-fade-in"
               />
             </div>
@@ -124,23 +138,8 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
             </div>
             
             <TimeSelector 
-              label="Lecture Times" 
-              onChange={setLectureTimes} 
-            />
-            
-            <TimeSelector 
-              label="Tutorial Times" 
-              onChange={setTutorialTimes} 
-            />
-            
-            <TimeSelector 
-              label="Office Hours" 
-              onChange={setOfficeHourTimes} 
-            />
-            
-            <TimeSelector 
-              label="Study Sessions" 
-              onChange={setStudySessionTimes} 
+              label="Course Schedule" 
+              onChange={setTimeSlots} 
             />
           </div>
         </ScrollArea>

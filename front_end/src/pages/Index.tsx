@@ -3,52 +3,132 @@ import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import CourseCard from '@/components/CourseCard';
 import AddCourseModal from '@/components/AddCourseModal';
+import CourseSettingsModal from '@/components/CourseSettingsModal';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TimeSlot } from '@/components/TimeSelector';
 
 interface Course {
   id: string;
   title: string;
   description?: string;
+  instructor?: string;
   lectureCount?: number;
   nextSession?: string;
   hasSyllabus?: boolean;
+  lectureTimes?: TimeSlot[];
+  tutorialTimes?: TimeSlot[];
+  officeHourTimes?: TimeSlot[];
+  studySessionTimes?: TimeSlot[];
+  schedule?: string;
 }
 
 const Index: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courses, setCourses] = useState<Course[]>([
     {
       id: "1",
       title: "Introduction to Computer Science",
       description: "Fundamental concepts of computer science, including algorithms, data structures, and computational thinking.",
+      instructor: "Dr. Jane Smith",
       lectureCount: 5,
       nextSession: "Mon 10:00",
-      hasSyllabus: true
+      hasSyllabus: true,
+      schedule: "Mon, Wed 10:00-11:30"
     },
     {
       id: "2",
       title: "Calculus I",
       description: "Introduction to differential and integral calculus, including limits, derivatives, and applications.",
+      instructor: "Dr. John Doe",
       lectureCount: 3,
       nextSession: "Wed 14:00",
-      hasSyllabus: false
+      hasSyllabus: false,
+      schedule: "Wed, Fri 14:00-15:30"
     }
   ]);
 
   const handleAddCourse = (courseData: any) => {
+    // Calculate next session from time slots
+    let nextSession;
+    if (courseData.lectureTimes && courseData.lectureTimes.length > 0) {
+      nextSession = `${courseData.lectureTimes[0].day} ${courseData.lectureTimes[0].time}`;
+    } else if (courseData.tutorialTimes && courseData.tutorialTimes.length > 0) {
+      nextSession = `${courseData.tutorialTimes[0].day} ${courseData.tutorialTimes[0].time}`;
+    }
+    
     const newCourse: Course = {
       id: Date.now().toString(),
       title: courseData.title,
       description: courseData.description,
+      instructor: courseData.instructor,
       lectureCount: 0,
-      nextSession: courseData.lectureTimes.length > 0 
-        ? `${courseData.lectureTimes[0].day} ${courseData.lectureTimes[0].time}` 
-        : undefined,
-      hasSyllabus: !!courseData.syllabus
+      nextSession,
+      hasSyllabus: !!courseData.syllabus,
+      lectureTimes: courseData.lectureTimes,
+      tutorialTimes: courseData.tutorialTimes,
+      officeHourTimes: courseData.officeHourTimes,
+      studySessionTimes: courseData.studySessionTimes
     };
     
     setCourses(prev => [...prev, newCourse]);
+  };
+  
+  const handleOpenSettings = (course: Course) => {
+    setSelectedCourse(course);
+    setIsSettingsModalOpen(true);
+  };
+  
+  const handleRemoveCourse = () => {
+    if (selectedCourse) {
+      setCourses(prev => prev.filter(course => course.id !== selectedCourse.id));
+      setIsSettingsModalOpen(false);
+      setSelectedCourse(null);
+    }
+  };
+  
+  const handleScheduleChange = (newSchedule: TimeSlot[]) => {
+    if (selectedCourse) {
+      // Group time slots by type
+      const lectureTimes = newSchedule.filter(slot => slot.type === 'lecture');
+      const tutorialTimes = newSchedule.filter(slot => slot.type === 'tutorial');
+      const officeHourTimes = newSchedule.filter(slot => slot.type === 'office_hour');
+      const studySessionTimes = newSchedule.filter(slot => slot.type === 'study_session');
+      
+      // Calculate next session
+      let nextSession = selectedCourse.nextSession;
+      if (lectureTimes.length > 0) {
+        nextSession = `${lectureTimes[0].day} ${lectureTimes[0].time}`;
+      } else if (tutorialTimes.length > 0) {
+        nextSession = `${tutorialTimes[0].day} ${tutorialTimes[0].time}`;
+      }
+      
+      // Update course
+      setCourses(prev => prev.map(course => {
+        if (course.id === selectedCourse.id) {
+          return {
+            ...course,
+            lectureTimes,
+            tutorialTimes,
+            officeHourTimes,
+            studySessionTimes,
+            nextSession
+          };
+        }
+        return course;
+      }));
+    }
+  };
+  
+  const handleCourseUpdate = (updatedCourse: Course) => {
+    setCourses(prev => prev.map(course => {
+      if (course.id === updatedCourse.id) {
+        return updatedCourse;
+      }
+      return course;
+    }));
   };
 
   return (
@@ -86,6 +166,7 @@ const Index: React.FC = () => {
                 key={course.id} 
                 className="animate-fade-in"
                 style={{ animationDelay: `${(index + 3) * 100}ms` }}
+                onClick={() => handleOpenSettings(course)}
               >
                 <CourseCard {...course} />
               </div>
@@ -99,6 +180,17 @@ const Index: React.FC = () => {
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleAddCourse}
       />
+      
+      {selectedCourse && (
+        <CourseSettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          course={selectedCourse}
+          onRemoveCourse={handleRemoveCourse}
+          onScheduleChange={handleScheduleChange}
+          onCourseUpdate={handleCourseUpdate}
+        />
+      )}
     </div>
   );
 };
