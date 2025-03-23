@@ -402,15 +402,15 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
               )}
               
               <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="flex items-center gap-1.5"
-                  onClick={() => setShowSettingsDialog(true)}
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>Course Settings</span>
-                </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="flex items-center gap-1.5 group"
+                onClick={() => setShowSettingsDialog(true)}
+              >
+                <Settings className="h-4 w-4 group-hover:animate-[spin_3s_linear_infinite]" />
+                <span>Course Settings</span>
+              </Button>
               </div>
             </div>
           </div>
