@@ -26,7 +26,7 @@ import {
   ChevronDown,
   AlertTriangle
 } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Dialog, 
   DialogContent, 
@@ -98,45 +98,40 @@ interface CourseDetailPageProps {
   };
 }
 
-const parseCourseTimes = (times: string[] = []): Array<{ type: string; day: string; time: string }> => {
-  const result: Array<{ type: string; day: string; time: string }> = [];
-
-  if (!Array.isArray(times)) {
-    console.error("Invalid input: times is not an array", times);
-    return result;
-  }
-
+// Function to parse lecture times to create sessions
+const parseCourseTimes = (times: string[] = []): Array<{type: string; day: string; time: string}> => {
+  // Define the return type explicitly to fix linter errors
+  const result: Array<{type: string; day: string; time: string}> = [];
+  
+  if (!times || !Array.isArray(times)) return result;
+  
   for (const time of times) {
     try {
-      console.log("Processing time:", time); // Debugging log
-
-      if (typeof time !== 'string' || !time.includes(':')) continue;
-
-      // Use regex split to only split on the first colon
-      const [typeWithColon, details] = time.split(/:(.+)/).map(str => str.trim());
+      if (!time || typeof time !== 'string') continue;
+      
+      const [typeWithColon, details] = time.split(':');
       if (!typeWithColon || !details) continue;
-
-      const type = typeWithColon.toLowerCase();
-
+      
+      const type = typeWithColon.trim();
+      const [day, ...timeRangeParts] = details.trim().split(' ');
+      const timeRange = timeRangeParts.join(' ');
+      if (!day || !timeRange) continue;
+      
       result.push({
-        type: type === 'lecture' ? 'Lecture' :
-              type === 'tutorial' ? 'Tutorial' :
-              type === 'officehours' ? 'Office Hours' :
-              type.charAt(0).toUpperCase() + type.slice(1), 
-        day: details.split(' ')[0],  // Extracts "Wed" or "Thu"
-        time: details.substring(details.indexOf(' ') + 1) // Extracts full time "8:00-09:00"
+        type: type === 'lecture' ? 'Lecture' : 
+              type === 'tutorial' ? 'Tutorial' : 
+              type === 'officehours' ? 'Office Hours' : 
+              type.charAt(0).toUpperCase() + type.slice(1),
+        day,
+        time: timeRange
       });
-
     } catch (err) {
       console.error("Error parsing time:", time, err);
     }
   }
-
-  console.log("Final parsed output:", result); // Debugging log
+  
   return result;
-};
-
-
+}
 
 export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { id } = params;
@@ -186,9 +181,6 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   }, [id]);
   
   // Parse sessions from course times
-  // console.log(courseData)
-  console.log(courseData?.times)
-  console.log(parseCourseTimes(['lecture: Wed 8:00-09:00', 'lecture: Thu 9:00-10:00']));
   const sessions = courseData?.times ? parseCourseTimes(courseData.times) : [];
   
   // Extract next assessment (exam/quiz) if exists
@@ -286,37 +278,14 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         return;
       }
 
-      // Extract filename without extension as fallback title
-      const fileName = data.file.name;
-      const fileNameWithoutExt = fileName.split('.')[0];
-      
-      // Try to get title from the PDF using the Flask endpoint
-      let lectureTitle = fileNameWithoutExt;
-      try {
-        const titleFormData = new FormData();
-        titleFormData.append('file', data.file);
-        
-        const titleResponse = await fetch('/api/lecture-title', {
-          method: 'POST',
-          body: titleFormData
-        });
-        
-        if (titleResponse.ok) {
-          const titleData = await titleResponse.json();
-          if (titleData.title && titleData.title.trim() !== '') {
-            lectureTitle = titleData.title;
-            console.log("Got lecture title from API:", lectureTitle);
-          }
-        }
-      } catch (titleError) {
-        // If extracting title fails, we'll use the filename
-        console.log("Failed to extract title, using filename instead:", fileNameWithoutExt);
-      }
+      // Upload file to our simple Next.js API endpoint
+      const result = await uploadFileForAnalysis(data.file);
+      console.log("Upload result:", result);
       
       // Create a simplified lecture object for display
       const newLecture = {
         id: Date.now().toString(),
-        title: lectureTitle,
+        title: data.file.name.split('.')[0],
         fileName: data.file.name,
         date: data.date || new Date().toISOString().split('T')[0],
         fileType: data.file.type,
