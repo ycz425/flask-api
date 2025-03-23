@@ -14,7 +14,7 @@ export default function Home() {
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
               <Sparkle className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-xl">Study Dash</span>
+            <span className="font-bold text-xl">Course Dash</span>
           </div>
           <div className="flex items-center space-x-4">
           <Link href="/auth">
@@ -90,9 +90,9 @@ export default function Home() {
         <section className="py-20 px-6 bg-muted/30">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">How Study Dash Works</h2>
+              <h2 className="text-3xl font-bold mb-4">How Course Dash Works</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Study Dash streamlines your academic journey with powerful tools designed for students.
+                Course Dash streamlines your academic journey with powerful tools designed for students.
               </p>
             </div>
 
@@ -100,7 +100,7 @@ export default function Home() {
               <div className="bg-white p-8 rounded-lg border shadow-soft transition-transform duration-300 hover:scale-105 hover:shadow-md">
                 <h3 className="text-xl font-semibold mb-4">Upload & Organize</h3>
                 <p className="text-muted-foreground mb-4">
-                  Easily upload your lecture materials, syllabi, and notes. Study Dash keeps everything organized by course and topic.
+                  Easily upload your lecture materials, syllabi, and notes. Course Dash keeps everything organized by course and topic.
                 </p>
                 <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
                   <p className="text-muted-foreground">Upload Interface Preview</p>
@@ -125,7 +125,7 @@ export default function Home() {
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-4">Ready to transform your learning experience?</h2>
             <p className="text-muted-foreground mb-8">
-              Join Study Dash today and take your academic organization to the next level.
+              Join Course Dash today and take your academic organization to the next level.
             </p>
             <Link href="/auth">
               <Button 
@@ -153,10 +153,10 @@ export default function Home() {
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
               <Sparkle className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-lg">Study Dash</span>
+            <span className="font-bold text-lg">Course Dash</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Study Dash. All rights reserved.
+            © {new Date().getFullYear()} Course Dash. All rights reserved.
           </p>
         </div>
       </footer>
