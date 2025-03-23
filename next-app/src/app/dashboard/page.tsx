@@ -10,6 +10,7 @@ import { authFetch } from '@/lib/utils/auth-fetch';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { Pointer } from "@/components/ui/coloured_pointer";
 
 interface Course {
   _id: string;
@@ -29,6 +30,8 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const { toast } = useToast();
   const searchParams = useSearchParams();
+  const [isHoveringCourse, setIsHoveringCourse] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -36,7 +39,6 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
 
-  // Check for 'added' param to show toast
   useEffect(() => {
     const added = searchParams.get('added');
     if (added === 'true') {
@@ -47,19 +49,18 @@ export default function DashboardPage() {
     }
   }, [searchParams, toast]);
 
-  // Fetch courses when user is authenticated
   const fetchCourses = async () => {
     if (user) {
       try {
         setIsLoading(true);
         const response = await authFetch('/api/courses');
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch courses');
         }
-        
+
         const data = await response.json();
-        console.log("Courses data from API:", data); // Log the response to inspect format
+        console.log("Courses data from API:", data);
         if (Array.isArray(data.courses)) {
           setCourses(data.courses);
         } else {
@@ -83,9 +84,7 @@ export default function DashboardPage() {
 
   const handleAddCourse = async (formData: any) => {
     try {
-      // Validate times array to ensure it's properly formatted
       if (formData.times && Array.isArray(formData.times)) {
-        // Ensure all time entries are strings
         formData.times = formData.times.filter((time: any) => time && typeof time === 'string');
       } else {
         formData.times = [];
@@ -105,7 +104,7 @@ export default function DashboardPage() {
           title: 'Success!',
           description: 'Course has been added successfully',
         });
-        fetchCourses(); // Refresh the courses list
+        fetchCourses();
       } else {
         const errorData = await response.json();
         toast({
@@ -128,9 +127,14 @@ export default function DashboardPage() {
     router.push(`/dashboard/course/${courseId}`);
   };
 
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setMousePosition({ x: e.clientX, y: e.clientY });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative" onMouseMove={handleMouseMove}>
       <Navbar />
+      {isHoveringCourse && <Pointer position={mousePosition} />}
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold">My Courses</h1>
@@ -147,10 +151,7 @@ export default function DashboardPage() {
         ) : error ? (
           <div className="p-4 mb-6 bg-red-100 border border-red-300 text-red-700 rounded">
             {error}
-            <button 
-              className="ml-2 underline"
-              onClick={fetchCourses}
-            >
+            <button className="ml-2 underline" onClick={fetchCourses}>
               Retry
             </button>
           </div>
@@ -164,18 +165,25 @@ export default function DashboardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
-              <CourseCard
+              <div
                 key={course._id}
-                course={{
-                  id: course._id,
-                  name: course.courseName,
-                  description: course.courseDescription,
-                  profName: course.profName,
-                  times: Array.isArray(course.times) ? course.times : [],
-                  createdAt: course.createdAt
-                }}
-                onClick={() => handleCourseClick(course._id)}
-              />
+                className="cursor-pointer"
+                onMouseEnter={() => setIsHoveringCourse(true)}
+                onMouseLeave={() => setIsHoveringCourse(false)}
+                style={{ cursor: isHoveringCourse ? 'none' : 'auto' }}
+              >
+                <CourseCard
+                  course={{
+                    id: course._id,
+                    name: course.courseName,
+                    description: course.courseDescription,
+                    profName: course.profName,
+                    times: Array.isArray(course.times) ? course.times : [],
+                    createdAt: course.createdAt,
+                  }}
+                  onClick={() => handleCourseClick(course._id)}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -188,4 +196,4 @@ export default function DashboardPage() {
       </main>
     </div>
   );
-} 
+}
