@@ -375,7 +375,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     <div className="min-h-screen bg-pattern animate-fade-in">
       <Navbar />
       
-      <main className="max-w-7xl mx-auto px-4 pt-24 pb-16">
+      <main className="max-w-7xl mx-auto px-4 pt-6 pb-16">
         <div className="mb-4">
           <Link href="/dashboard" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 animate-slide-right">
             <ArrowLeft className="h-4 w-4 mr-1" />
