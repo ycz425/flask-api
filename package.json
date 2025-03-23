@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "cd front_end && npm install && npm run dev",
     "install-all": "npm install && cd front_end && npm install",
-    "start": "concurrently \"cd flask_app && python -m flask run\" \"cd front_end && npm run dev\""
+    "start": "concurrently \"cd flask_app && flask run\" \"cd front_end && npm run dev\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

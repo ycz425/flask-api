@@ -28,6 +28,8 @@ def upload_file():
     """Handles user file uploads."""
     file = request.files.get("file")
     course = request.form.get("course")
+    title = request.form.get("title")
+    user_id = request.form.get("user_id")
 
     if not file:
         return jsonify({"error": "No file provided"}), 400
@@ -39,10 +41,7 @@ def upload_file():
         return jsonify({"error": "Unsupported file type"}), 400
 
     # Process the file and store in ChromaDB (for chatbot)
-    vectorize_and_store(file, course)
-
-    # TODO: insert to database
-
+    vectorize_and_store(file, course, title, user_id)
 
     return jsonify({"message": "File uploaded & processed successfully."})
 
@@ -52,11 +51,12 @@ def generate_response():
     """Generate a response to user queries."""
     query = request.json.get("query")
     course = request.json.get("course")
+    user_id = request.json.get("user_id")
 
     if not query:
         return jsonify({"error": "No query provided"}), 400
     
-    response = get_response(query, course)
+    response = get_response(query, course, user_id)
     
     return jsonify({'response': response})
 
