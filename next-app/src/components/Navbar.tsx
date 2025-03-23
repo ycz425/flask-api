@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { LogOut, LockIcon } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -47,9 +48,15 @@ const Navbar = () => {
                 )}
                 <button
                   onClick={handleLogout}
-                  className="ml-4 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="ml-4 px-3.5 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:text-white group relative overflow-hidden transition-all duration-300 hover:border-blue-600 hover:shadow-md"
                 >
-                  Logout
+                  <div className="flex items-center relative z-10">
+                    <div className="mr-2 relative">
+                      <LogOut className="h-4 w-4 transition-all duration-300 group-hover:rotate-12 group-hover:translate-y-1" />
+                    </div>
+                    <span>Logout</span>
+                  </div>
+                  <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-400 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
                 </button>
               </div>
             ) : (
