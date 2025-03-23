@@ -47,57 +47,10 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
       setCourseName(course.title || course.courseName || '');
       setInstructor(course.instructor || course.profName || '');
       
-      // Initialize time slots from course data or currentSchedule
-      const initialTimeSlots: TimeSlot[] = currentSchedule?.length 
-        ? [...currentSchedule] 
-        : [];
-      
-      // Only attempt to parse course times if not using currentSchedule
-      if (!currentSchedule?.length && course) {
-        // Add lecture times
-        if (course.lectureTimes?.length) {
-          initialTimeSlots.push(
-            ...course.lectureTimes.map((slot: any) => ({
-              ...slot,
-              type: 'lecture' as const
-            }))
-          );
-        }
-        
-        // Add tutorial times
-        if (course.tutorialTimes?.length) {
-          initialTimeSlots.push(
-            ...course.tutorialTimes.map((slot: any) => ({
-              ...slot,
-              type: 'tutorial' as const
-            }))
-          );
-        }
-        
-        // Add office hour times
-        if (course.officeHourTimes?.length) {
-          initialTimeSlots.push(
-            ...course.officeHourTimes.map((slot: any) => ({
-              ...slot,
-              type: 'office_hour' as const
-            }))
-          );
-        }
-        
-        // Add study session times
-        if (course.studySessionTimes?.length) {
-          initialTimeSlots.push(
-            ...course.studySessionTimes.map((slot: any) => ({
-              ...slot,
-              type: 'study_session' as const
-            }))
-          );
-        }
-      }
-      
-      setTimeSlots(initialTimeSlots);
+      // Always start with empty time slots
+      setTimeSlots([]);
     }
-  }, [course, currentSchedule]);
+  }, [course]);
   
   const handleSyllabusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -105,22 +58,152 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
     }
   };
   
-  const handleScheduleUpdate = () => {
-    onScheduleChange(timeSlots);
+  const convertTimeToMinutes = (time: string): number => {
+    if (!time) return 0; // Handle undefined or empty time strings
+    
+    // Handle invalid format
+    if (!time.includes(':')) return 0;
+    
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
   };
   
-  const handleGeneralUpdate = () => {
+  const handleScheduleUpdate = async () => {
+    try {
+      // Skip update if no time slots are selected
+      if (!timeSlots || timeSlots.length === 0) {
+        onClose();
+        return;
+      }
+      
+      // Group timeslots by type and day
+      const timeSlotsByTypeAndDay: { [key: string]: { startTime: string; endTime: string }[] } = {};
+      
+      timeSlots.forEach(slot => {
+        // Skip invalid slots
+        if (!slot || !slot.type || !slot.day) return;
+        
+        const key = `${slot.type}:${slot.day}`;
+        if (!timeSlotsByTypeAndDay[key]) {
+          timeSlotsByTypeAndDay[key] = [];
+        }
+        
+        // Use the time as both start and end time (1-hour blocks)
+        const hourTime = slot.time;
+        // Calculate end time by adding 1 hour to the start time
+        const [hour, minute] = hourTime.split(':').map(Number);
+        const endHour = (hour + 1) % 24;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        
+        timeSlotsByTypeAndDay[key].push({
+          startTime: hourTime,
+          endTime: endTime 
+        });
+      });
+      
+      // Combine contiguous time blocks and format
+      const formattedTimes: string[] = [];
+      
+      Object.entries(timeSlotsByTypeAndDay).forEach(([key, slots]) => {
+        const [type, day] = key.split(':');
+        
+        // Skip if no slots for this type/day
+        if (slots.length === 0) return;
+        
+        // Sort by start time
+        const sortedSlots = [...slots].sort((a, b) => {
+          return convertTimeToMinutes(a.startTime) - convertTimeToMinutes(b.startTime);
+        });
+        
+        // Combine contiguous blocks
+        const mergedSlots = [];
+        
+        // Handle case where no slots are present
+        if (sortedSlots.length === 0) return;
+        
+        // Make sure we have a valid first slot
+        if (!sortedSlots[0] || !sortedSlots[0].startTime || !sortedSlots[0].endTime) return;
+        
+        let currentBlock = { ...sortedSlots[0] };
+        
+        for (let i = 1; i < sortedSlots.length; i++) {
+          const currentSlot = sortedSlots[i];
+          
+          // Skip invalid slots
+          if (!currentSlot || !currentSlot.startTime || !currentSlot.endTime) continue;
+          
+          // If this slot starts at or before the current block ends, extend the block
+          if (convertTimeToMinutes(currentSlot.startTime) <= convertTimeToMinutes(currentBlock.endTime)) {
+            // Take the later end time
+            if (convertTimeToMinutes(currentSlot.endTime) > convertTimeToMinutes(currentBlock.endTime)) {
+              currentBlock.endTime = currentSlot.endTime;
+            }
+          } else {
+            // This is a new block
+            mergedSlots.push(currentBlock);
+            currentBlock = { ...currentSlot };
+          }
+        }
+        
+        // Add the last block
+        mergedSlots.push(currentBlock);
+        
+        // Format each merged block
+        mergedSlots.forEach(slot => {
+          formattedTimes.push(`${type}: ${day} ${slot.startTime}-${slot.endTime}`);
+        });
+      });
+      
+      // Create updated course object with new schedule
+      const updatedCourse = {
+        ...course,
+        times: formattedTimes
+      };
+      
+      if (onCourseUpdate) {
+        onCourseUpdate(updatedCourse);
+      }
+    } catch (error) {
+      console.error("Error updating schedule:", error);
+    }
+  };
+  
+  const handleGeneralUpdate = async () => {
     if (!onCourseUpdate) return;
     
-    // Create updated course object
-    const updatedCourse = {
-      ...course,
-      title: courseName,
-      instructor: instructor,
-      hasSyllabus: !!syllabus
-    };
-    
-    onCourseUpdate(updatedCourse);
+    try {
+      // Create updated course object
+      const updatedCourse = {
+        ...course,
+        title: courseName,
+        courseName: courseName, // Support both naming conventions
+        instructor: instructor,
+        profName: instructor, // Support both naming conventions
+      };
+      
+      // Handle syllabus file if present
+      if (syllabus) {
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+          reader.onload = () => {
+            const base64String = reader.result as string;
+            resolve(base64String);
+          };
+        });
+        
+        reader.readAsDataURL(syllabus);
+        updatedCourse.syllabusPDF = await base64Promise;
+        updatedCourse.hasSyllabus = true;
+      } else if (course?.syllabusPDF) {
+        // Keep existing syllabus if no new one was uploaded
+        updatedCourse.syllabusPDF = course.syllabusPDF;
+        updatedCourse.hasSyllabus = true;
+      }
+      
+      onCourseUpdate(updatedCourse);
+    } catch (error) {
+      console.error("Error updating course:", error);
+    }
   };
   
   const handleSave = () => {

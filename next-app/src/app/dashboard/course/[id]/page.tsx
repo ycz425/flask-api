@@ -99,7 +99,8 @@ interface CourseDetailPageProps {
 
 // Function to parse lecture times to create sessions
 const parseCourseTimes = (times: string[] = []): Array<{type: string; day: string; time: string}> => {
-  const result = [];
+  // Define the return type explicitly to fix linter errors
+  const result: Array<{type: string; day: string; time: string}> = [];
   
   if (!times || !Array.isArray(times)) return result;
   
@@ -921,19 +922,42 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           course={courseData}
           onRemoveCourse={handleRemoveCourse}
           onScheduleChange={handleScheduleChange}
-          onCourseUpdate={(updatedCourse) => {
-            console.log('Course updated:', updatedCourse);
-            toast({
-              title: "Course Updated",
-              description: "Course details have been updated successfully.",
-              duration: 3000,
-            });
+          onCourseUpdate={async (updatedCourse) => {
+            try {
+              // Update the course in the database
+              const response = await authFetch(`/api/courses/${id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedCourse),
+              });
+              
+              if (!response.ok) {
+                throw new Error('Failed to update course');
+              }
+              
+              const data = await response.json();
+              console.log('Course updated:', data);
+              
+              // Update the local state
+              setCourseData(data.course);
+              
+              toast({
+                title: "Course Updated",
+                description: "Course details have been updated successfully.",
+                duration: 3000,
+              });
+            } catch (error) {
+              console.error('Error updating course:', error);
+              toast({
+                title: "Error",
+                description: "Failed to update course. Please try again.",
+                variant: "destructive",
+                duration: 3000,
+              });
+            }
           }}
-          currentSchedule={sessions.map(session => ({
-            type: session.type.toLowerCase() as any,
-            day: session.day,
-            time: session.time.split('-')[0] // Just use the start time
-          }))}
         />
       )}
     </div>
