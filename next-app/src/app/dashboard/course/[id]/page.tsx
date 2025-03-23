@@ -278,6 +278,33 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         return;
       }
 
+      // Extract filename without extension as fallback title
+      const fileName = data.file.name;
+      const fileNameWithoutExt = fileName.split('.')[0];
+      
+      // Try to get title from the PDF using the Flask endpoint
+      let lectureTitle = fileNameWithoutExt;
+      try {
+        const titleFormData = new FormData();
+        titleFormData.append('file', data.file);
+        
+        const titleResponse = await fetch('/api/lecture-title', {
+          method: 'POST',
+          body: titleFormData
+        });
+        
+        if (titleResponse.ok) {
+          const titleData = await titleResponse.json();
+          if (titleData.title && titleData.title.trim() !== '') {
+            lectureTitle = titleData.title;
+            console.log("Got lecture title from API:", lectureTitle);
+          }
+        }
+      } catch (titleError) {
+        // If extracting title fails, we'll use the filename
+        console.log("Failed to extract title, using filename instead:", fileNameWithoutExt);
+      }
+
       // Upload file to our simple Next.js API endpoint
       const result = await uploadFileForAnalysis(data.file);
       console.log("Upload result:", result);
@@ -285,7 +312,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
       // Create a simplified lecture object for display
       const newLecture = {
         id: Date.now().toString(),
-        title: data.file.name.split('.')[0],
+        title: lectureTitle,
         fileName: data.file.name,
         date: data.date || new Date().toISOString().split('T')[0],
         fileType: data.file.type,
