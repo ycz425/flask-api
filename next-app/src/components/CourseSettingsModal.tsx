@@ -18,22 +18,24 @@ import TimeSelector, { TimeSlot } from './TimeSelector';
 interface CourseSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  course: any;
+  course?: any;
   onRemoveCourse: () => void;
   onScheduleChange: (newSchedule: TimeSlot[]) => void;
-  onCourseUpdate: (updatedCourse: any) => void;
+  onCourseUpdate?: (updatedCourse: any) => void;
+  currentSchedule?: TimeSlot[];
 }
 
 const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
   isOpen,
   onClose,
-  course,
+  course = {},
   onRemoveCourse,
   onScheduleChange,
-  onCourseUpdate
+  onCourseUpdate,
+  currentSchedule = []
 }) => {
   const [activeTab, setActiveTab] = useState('general');
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(currentSchedule || []);
   const [courseName, setCourseName] = useState('');
   const [instructor, setInstructor] = useState('');
   const [syllabus, setSyllabus] = useState<File | null>(null);
@@ -42,55 +44,60 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
   // Parse current schedule and initialize form values
   useEffect(() => {
     if (course) {
-      setCourseName(course.title || '');
-      setInstructor(course.instructor || '');
+      setCourseName(course.title || course.courseName || '');
+      setInstructor(course.instructor || course.profName || '');
       
-      // Initialize time slots from course data
-      const initialTimeSlots: TimeSlot[] = [];
+      // Initialize time slots from course data or currentSchedule
+      const initialTimeSlots: TimeSlot[] = currentSchedule?.length 
+        ? [...currentSchedule] 
+        : [];
       
-      // Add lecture times
-      if (course.lectureTimes?.length) {
-        initialTimeSlots.push(
-          ...course.lectureTimes.map((slot: any) => ({
-            ...slot,
-            type: 'lecture' as const
-          }))
-        );
-      }
-      
-      // Add tutorial times
-      if (course.tutorialTimes?.length) {
-        initialTimeSlots.push(
-          ...course.tutorialTimes.map((slot: any) => ({
-            ...slot,
-            type: 'tutorial' as const
-          }))
-        );
-      }
-      
-      // Add office hour times
-      if (course.officeHourTimes?.length) {
-        initialTimeSlots.push(
-          ...course.officeHourTimes.map((slot: any) => ({
-            ...slot,
-            type: 'office_hour' as const
-          }))
-        );
-      }
-      
-      // Add study session times
-      if (course.studySessionTimes?.length) {
-        initialTimeSlots.push(
-          ...course.studySessionTimes.map((slot: any) => ({
-            ...slot,
-            type: 'study_session' as const
-          }))
-        );
+      // Only attempt to parse course times if not using currentSchedule
+      if (!currentSchedule?.length && course) {
+        // Add lecture times
+        if (course.lectureTimes?.length) {
+          initialTimeSlots.push(
+            ...course.lectureTimes.map((slot: any) => ({
+              ...slot,
+              type: 'lecture' as const
+            }))
+          );
+        }
+        
+        // Add tutorial times
+        if (course.tutorialTimes?.length) {
+          initialTimeSlots.push(
+            ...course.tutorialTimes.map((slot: any) => ({
+              ...slot,
+              type: 'tutorial' as const
+            }))
+          );
+        }
+        
+        // Add office hour times
+        if (course.officeHourTimes?.length) {
+          initialTimeSlots.push(
+            ...course.officeHourTimes.map((slot: any) => ({
+              ...slot,
+              type: 'office_hour' as const
+            }))
+          );
+        }
+        
+        // Add study session times
+        if (course.studySessionTimes?.length) {
+          initialTimeSlots.push(
+            ...course.studySessionTimes.map((slot: any) => ({
+              ...slot,
+              type: 'study_session' as const
+            }))
+          );
+        }
       }
       
       setTimeSlots(initialTimeSlots);
     }
-  }, [course]);
+  }, [course, currentSchedule]);
   
   const handleSyllabusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -103,6 +110,8 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
   };
   
   const handleGeneralUpdate = () => {
+    if (!onCourseUpdate) return;
+    
     // Create updated course object
     const updatedCourse = {
       ...course,
@@ -172,7 +181,12 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
                     <div className="text-center">
                       <FileUp className="h-8 w-8 text-muted-foreground mb-2 mx-auto" />
                       <p className="text-sm text-muted-foreground">
-                        {syllabus ? syllabus.name : course.hasSyllabus ? "Replace syllabus" : "Upload PDF syllabus"}
+                        {syllabus 
+                          ? syllabus.name 
+                          : (course?.hasSyllabus || course?.syllabusPDF) 
+                            ? "Replace syllabus" 
+                            : "Upload PDF syllabus"
+                        }
                       </p>
                     </div>
                     <input

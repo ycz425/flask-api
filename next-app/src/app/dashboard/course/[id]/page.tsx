@@ -918,9 +918,22 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         <CourseSettingsModal
           isOpen={showSettingsDialog}
           onClose={() => setShowSettingsDialog(false)}
+          course={courseData}
           onRemoveCourse={handleRemoveCourse}
           onScheduleChange={handleScheduleChange}
-          currentSchedule={[]}
+          onCourseUpdate={(updatedCourse) => {
+            console.log('Course updated:', updatedCourse);
+            toast({
+              title: "Course Updated",
+              description: "Course details have been updated successfully.",
+              duration: 3000,
+            });
+          }}
+          currentSchedule={sessions.map(session => ({
+            type: session.type.toLowerCase() as any,
+            day: session.day,
+            time: session.time.split('-')[0] // Just use the start time
+          }))}
         />
       )}
     </div>
