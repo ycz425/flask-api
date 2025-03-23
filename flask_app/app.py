@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_app.chatbot import vectorize_and_store, get_response
+from flask_app.chatbot import vectorize_and_store, get_response, delete_history
 from flask_app.text_extraction import extract_title
 import datetime
 
@@ -74,6 +74,13 @@ def generate_response():
     response = get_response(query, course, user_id)
     
     return jsonify({'response': response})
+
+
+@app.route("/api/chat", methods=["DELETE"])
+def delete_chat_history():
+    # Deletes the unified in-memory chat history for now.
+    # In the future, chat history will be stored in the cloud.
+    delete_history()
 
 
 @app.route('/api/users', methods=['POST'])

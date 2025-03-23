@@ -35,7 +35,7 @@ def query_documents(query_embedding, course, user_id, top_k=3):
 def get_prompt(query, course, context):
     prompt = f"""
     Conversation History:
-    {"\n".join([f"User: {exchange['user']}\nBot: {exchange['bot']}" for exchange in HISTORY])}
+    {"\n".join([f"User: {exchange['user']}\nBot: {exchange['bot']}" for exchange in HISTORY]) if HISTORY else "None."}
 
     User Query: {query}
 
@@ -64,3 +64,9 @@ def get_response(query, course, user_id):
         HISTORY.pop(0)
 
     return response.text
+
+
+def delete_history():
+    # Temporary solution.
+    # In the future, chat history will be stored in the cloud.
+    HISTORY.clear()
