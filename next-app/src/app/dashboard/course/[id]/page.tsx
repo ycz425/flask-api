@@ -571,10 +571,10 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-1.5 mr-4">
-                        <Plus className="h-4 w-4"/>
-                        <span>Add Lecture</span>
-                      </Button>
+                    <Button size="sm" className="flex items-center gap-1.5 mr-4 transition-transform hover:scale-105">
+                      <Plus className="h-4 w-4 transition-transform group-hover:rotate-90"/>
+                      <span>Add Lecture</span>
+                    </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
@@ -699,8 +699,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-1.5 mr-4">
-                        <Plus className="h-4 w-4" />
+                      <Button size="sm" className="flex items-center gap-1.5 mr-4 transition-transform hover:scale-105">
+                        <Plus className="h-4 w-4 transition-transform group-hover:rotate-90"/>
                         <span>Add Assignment</span>
                       </Button>
                     </DialogTrigger>
@@ -823,8 +823,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-1.5 mr-4">
-                        <Plus className="h-4 w-4" />
+                      <Button size="sm" className="flex items-center gap-1.5 mr-4 transition-transform hover:scale-105">
+                        <Plus className="h-4 w-4 transition-transform group-hover:rotate-90"/>
                         <span>Add Assessment</span>
                       </Button>
                     </DialogTrigger>
