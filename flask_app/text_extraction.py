@@ -49,5 +49,5 @@ def extract_text_from_docx(file):
 def extract_title(file):
     text = extract_text(file)
     model = genai.GenerativeModel(model_name='gemini-2.0-flash')
-    response = model.generate_content(f"Extract the lecture title and respond with only the title and nothing else. Do not include course code and make sure the title is grammatically correct:\n\n{text}")
+    response = model.generate_content(f"Extract the lecture title and respond with only the title and nothing else. Do not include course code and make sure the title is coherent. Do not append newline to your response:\n\nDocument:\n{text}")
     return response.text
