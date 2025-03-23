@@ -59,7 +59,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in animate-delay-300">
-              <div className="bg-white p-6 rounded-lg border shadow-soft">
+              <div className="bg-white p-6 rounded-lg border shadow-soft transition-transform duration-300 hover:scale-105 hover:shadow-md">
                 <div className="h-12 w-12 rounded-md bg-primary/10 flex items-center justify-center mb-4">
                   <BookOpen className="h-6 w-6 text-primary" />
                 </div>
@@ -67,7 +67,7 @@ export default function Home() {
                 <p className="text-muted-foreground">Keep track of all your courses, lectures, and materials in one organized place.</p>
               </div>
               
-              <div className="bg-white p-6 rounded-lg border shadow-soft">
+              <div className="bg-white p-6 rounded-lg border shadow-soft transition-transform duration-300 hover:scale-105 hover:shadow-md">
                 <div className="h-12 w-12 rounded-md bg-primary/10 flex items-center justify-center mb-4">
                   <Calendar className="h-6 w-6 text-primary" />
                 </div>
@@ -75,7 +75,7 @@ export default function Home() {
                 <p className="text-muted-foreground">Set up your weekly schedule with lectures, tutorials, and study sessions.</p>
               </div>
               
-              <div className="bg-white p-6 rounded-lg border shadow-soft">
+              <div className="bg-white p-6 rounded-lg border shadow-soft transition-transform duration-300 hover:scale-105 hover:shadow-md">
                 <div className="h-12 w-12 rounded-md bg-primary/10 flex items-center justify-center mb-4">
                   <BrainCircuit className="h-6 w-6 text-primary" />
                 </div>
@@ -97,7 +97,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              <div className="bg-white p-8 rounded-lg border shadow-soft">
+              <div className="bg-white p-8 rounded-lg border shadow-soft transition-transform duration-300 hover:scale-105 hover:shadow-md">
                 <h3 className="text-xl font-semibold mb-4">Upload & Organize</h3>
                 <p className="text-muted-foreground mb-4">
                   Easily upload your lecture materials, syllabi, and notes. Study Dash keeps everything organized by course and topic.
@@ -107,7 +107,7 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="bg-white p-8 rounded-lg border shadow-soft">
+              <div className="bg-white p-8 rounded-lg border shadow-soft transition-transform duration-300 hover:scale-105 hover:shadow-md">
                 <h3 className="text-xl font-semibold mb-4">Test Your Knowledge</h3>
                 <p className="text-muted-foreground mb-4">
                   Practice with automatically generated quizzes based on your course materials at various difficulty levels.
