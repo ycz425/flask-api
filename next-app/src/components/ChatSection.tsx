@@ -23,6 +23,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ course }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<Message[]>([{
     id: (Date.now() + 1).toString(),
@@ -31,11 +32,12 @@ const ChatSection: React.FC<ChatSectionProps> = ({ course }) => {
     isUser: false
   }]);
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   useEffect(() => {
-    // Scroll to bottom when new messages are added
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
+    scrollToBottom();
   }, [messages]);
 
   const handleSendMessage = async () => {
@@ -128,6 +130,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ course }) => {
               </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
       
