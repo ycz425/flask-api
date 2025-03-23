@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Calendar, BrainCircuit, Sparkle } from 'lucide-react';
+import { ArrowRight, BookOpen, Calendar, BrainCircuit, LockIcon, UnlockIcon, Sparkle } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -17,12 +17,20 @@ export default function Home() {
             <span className="font-bold text-xl">Study Dash</span>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="/auth">
-              <Button variant="outline" className="rounded-full px-6">Log in</Button>
-            </Link>
-            <Link href="/auth">
-              <Button className="rounded-full px-6 shadow-soft">Sign Up</Button>
-            </Link>
+          <Link href="/auth">
+            <Button 
+              className="rounded-full px-6 py-2 shadow-soft transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-primary/90 active:scale-95 active:shadow-inner relative overflow-hidden group"
+            >
+              <div className="flex items-center relative z-10">
+                <div className="mr-2 relative">
+                  <LockIcon className="h-4 w-4 transition-all duration-300 opacity-100 group-hover:opacity-0 group-hover:rotate-12 group-hover:translate-y-2" />
+                  <UnlockIcon className="h-4 w-4 absolute top-0 left-0 transition-all duration-300 opacity-0 -rotate-12 -translate-y-2 group-hover:opacity-100 group-hover:rotate-0 group-hover:translate-y-0" />
+                </div>
+                <span>Log in</span>
+              </div>
+              <span className="absolute inset-0 bg-gradient-to-r from-primary to-primary-light transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
+            </Button>
+          </Link>
           </div>
         </div>
       </header>
@@ -39,8 +47,13 @@ export default function Home() {
                 Organize your courses, manage materials, and enhance your learning experience with AI-powered summaries and quizzes.
               </p>
               <Link href="/auth">
-                <Button size="lg" className="rounded-full px-8 shadow-soft animate-slide-up animate-delay-200">
-                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                <Button 
+                  size="lg" 
+                  className="rounded-full px-8 shadow-soft animate-slide-up animate-delay-200 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-primary/90 active:scale-95 active:shadow-inner relative overflow-hidden group"
+                >
+                  <span className="relative z-10">Get Started</span> 
+                  <ArrowRight className="ml-2 h-5 w-5 relative z-10 transition-transform group-hover:translate-x-1" />
+                  <span className="absolute inset-0 bg-gradient-to-r from-primary to-primary-light transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
                 </Button>
               </Link>
             </div>
@@ -115,8 +128,19 @@ export default function Home() {
               Join Study Dash today and take your academic organization to the next level.
             </p>
             <Link href="/auth">
-              <Button size="lg" className="rounded-full px-8 shadow-soft">
-                Sign Up for Free <ArrowRight className="ml-2 h-5 w-5" />
+              <Button 
+                size="lg" 
+                className="rounded-full px-8 shadow-soft transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-primary/90 active:scale-95 active:shadow-inner relative overflow-hidden group"
+              >
+                <div className="flex items-center relative z-10">
+                  <div className="mr-2 relative">
+                    <LockIcon className="h-4 w-4 transition-all duration-300 opacity-100 group-hover:opacity-0 group-hover:rotate-12 group-hover:translate-y-2" />
+                    <UnlockIcon className="h-4 w-4 absolute top-0 left-0 transition-all duration-300 opacity-0 -rotate-12 -translate-y-2 group-hover:opacity-100 group-hover:rotate-0 group-hover:translate-y-0" />
+                  </div>
+                  <span>Sign Up for Free</span>
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </div>
+                <span className="absolute inset-0 bg-gradient-to-r from-primary to-primary-light transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
               </Button>
             </Link>
           </div>
@@ -138,4 +162,4 @@ export default function Home() {
       </footer>
     </div>
   );
-} 
+}
