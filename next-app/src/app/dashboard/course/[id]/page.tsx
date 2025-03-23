@@ -90,12 +90,14 @@ const mockCourses = {
         status: "pending"
       }
     ],
-    nextExam: {
+    assessments: [
+      {
       title: "Midterm Examination",
       date: "October 15, 2023",
       exactDate: "2023-10-15T14:00:00",
       location: "Main Hall, Building A"
-    }
+      }
+    ]
   },
   "2": {
     id: "2",
@@ -313,7 +315,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             <TabPanel id="summary">
               <div className="p-1">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <div className="col-span-1 md:col-span-2">
+                  <div className="col-span-1 md:col-span-2 pl-4">
                     <h2 className="text-lg font-semibold mb-1 flex items-center">
                       <BookOpen className="h-5 w-5 mr-2" />
                       Course Overview
@@ -390,7 +392,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             
             <TabPanel id="lectures">
               <div className="p-1">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 pl-4">
                   <h2 className="text-xl font-semibold flex items-center">
                     <BookOpen className="h-5 w-5 mr-2" />
                     Lecture Materials
@@ -398,8 +400,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-1.5">
-                        <Plus className="h-4 w-4" />
+                      <Button size="sm" className="flex items-center gap-1.5 mr-4">
+                        <Plus className="h-4 w-4"/>
                         <span>Add Lecture</span>
                       </Button>
                     </DialogTrigger>
@@ -518,7 +520,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             
             <TabPanel id="assignments">
               <div className="p-1">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 pl-4">
                   <h2 className="text-xl font-semibold flex items-center">
                     <FileText className="h-5 w-5 mr-2" />
                     Assignments
@@ -526,7 +528,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-1.5">
+                      <Button size="sm" className="flex items-center gap-1.5 mr-4">
                         <Plus className="h-4 w-4" />
                         <span>Add Assignment</span>
                       </Button>
@@ -621,7 +623,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             
             <TabPanel id="quiz">
               <div className="p-1">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <h2 className="text-xl font-semibold mb-4 flex items-center pl-4">
                   <BrainCircuit className="h-5 w-5 mr-2" />
                   Practice Quiz
                 </h2>
@@ -642,7 +644,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             
             <TabPanel id="assessments">
               <div className="p-1">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 pl-4">
                   <h2 className="text-xl font-semibold flex items-center">
                     <Award className="h-5 w-5 mr-2" />
                     Assessments
@@ -650,7 +652,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-1.5">
+                      <Button size="sm" className="flex items-center gap-1.5 mr-4">
                         <Plus className="h-4 w-4" />
                         <span>Add Assessment</span>
                       </Button>
