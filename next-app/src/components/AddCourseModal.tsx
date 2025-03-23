@@ -16,19 +16,41 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TimeSelector, { TimeSlot } from './TimeSelector';
 import { FileUp } from 'lucide-react';
+import { authFetch } from '@/lib/utils/auth-fetch';
 
 interface AddCourseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (courseData: any) => void;
+  onAddCourse: (courseData: any) => void;
 }
 
-const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave }) => {
+interface TimeSlotData {
+  startTime: string;
+  endTime: string;
+}
+
+interface TimeSlotsByTypeAndDay {
+  [key: string]: TimeSlotData[];
+}
+
+const convertTimeToMinutes = (time: string): number => {
+  if (!time) return 0; // Handle undefined or empty time strings
+  
+  // Handle invalid format
+  if (!time.includes(':')) return 0;
+  
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onAddCourse }) => {
   const [courseName, setCourseName] = useState('');
   const [description, setDescription] = useState('');
   const [instructor, setInstructor] = useState('');
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [syllabus, setSyllabus] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
   
   const handleSyllabusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -36,37 +58,151 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
     }
   };
   
-  const handleSubmit = () => {
-    // Separate time slots by type
-    const lectureTimes = timeSlots.filter(slot => slot.type === 'lecture');
-    const tutorialTimes = timeSlots.filter(slot => slot.type === 'tutorial');
-    const officeHourTimes = timeSlots.filter(slot => slot.type === 'office_hour');
-    const studySessionTimes = timeSlots.filter(slot => slot.type === 'study_session');
+  const handleSubmit = async () => {
+    if (!courseName.trim()) {
+      setError('Course name is required');
+      return;
+    }
     
-    // Create a course object with all the data
-    const courseData = {
-      id: Date.now().toString(),
-      title: courseName,
-      description,
-      instructor,
-      lectureTimes,
-      tutorialTimes,
-      officeHourTimes,
-      studySessionTimes,
-      syllabus: syllabus ? syllabus.name : null,
-      hasSyllabus: !!syllabus
-    };
+    setIsSubmitting(true);
+    setError('');
     
-    onSave(courseData);
-    
-    // Reset form
-    setCourseName('');
-    setDescription('');
-    setInstructor('');
-    setTimeSlots([]);
-    setSyllabus(null);
-    
-    onClose();
+    try {
+      // Group timeslots by type and day with proper typing
+      const timeSlotsByTypeAndDay: TimeSlotsByTypeAndDay = {};
+      
+      timeSlots.forEach(slot => {
+        // Skip invalid slots
+        if (!slot || !slot.type || !slot.day) return;
+        
+        const key = `${slot.type}:${slot.day}`;
+        if (!timeSlotsByTypeAndDay[key]) {
+          timeSlotsByTypeAndDay[key] = [];
+        }
+        
+        // Use the time as both start and end time (1-hour blocks)
+        const hourTime = slot.time;
+        // Calculate end time by adding 1 hour to the start time
+        const [hour, minute] = hourTime.split(':').map(Number);
+        const endHour = (hour + 1) % 24;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        
+        timeSlotsByTypeAndDay[key].push({
+          startTime: hourTime,
+          endTime: endTime 
+        });
+      });
+      
+      // Combine contiguous time blocks and format with explicit typing
+      const formattedTimes: string[] = [];
+      
+      Object.entries(timeSlotsByTypeAndDay).forEach(([key, slots]) => {
+        const [type, day] = key.split(':');
+        
+        // Skip if no slots for this type/day
+        if (slots.length === 0) return;
+        
+        // Sort by start time
+        const sortedSlots = [...slots].sort((a, b) => {
+          return convertTimeToMinutes(a.startTime) - convertTimeToMinutes(b.startTime);
+        });
+        
+        // Combine contiguous blocks
+        const mergedSlots = [];
+        
+        // Handle case where no slots are present
+        if (sortedSlots.length === 0) return;
+        
+        // Make sure we have a valid first slot
+        if (!sortedSlots[0] || !sortedSlots[0].startTime || !sortedSlots[0].endTime) return;
+        
+        let currentBlock = { ...sortedSlots[0] };
+        
+        for (let i = 1; i < sortedSlots.length; i++) {
+          const currentSlot = sortedSlots[i];
+          
+          // Skip invalid slots
+          if (!currentSlot || !currentSlot.startTime || !currentSlot.endTime) continue;
+          
+          // If this slot starts at or before the current block ends, extend the block
+          if (convertTimeToMinutes(currentSlot.startTime) <= convertTimeToMinutes(currentBlock.endTime)) {
+            // Take the later end time
+            if (convertTimeToMinutes(currentSlot.endTime) > convertTimeToMinutes(currentBlock.endTime)) {
+              currentBlock.endTime = currentSlot.endTime;
+            }
+          } else {
+            // This is a new block
+            mergedSlots.push(currentBlock);
+            currentBlock = { ...currentSlot };
+          }
+        }
+        
+        // Add the last block
+        mergedSlots.push(currentBlock);
+        
+        // Format each merged block
+        mergedSlots.forEach(slot => {
+          formattedTimes.push(`${type}: ${day} ${slot.startTime}-${slot.endTime}`);
+        });
+      });
+      
+      // Create base course data object
+      const courseData = {
+        courseName,
+        courseDescription: description,
+        profName: instructor,
+        times: formattedTimes,
+        // We'll handle the file separately
+        syllabusPDF: '',
+        lectureNotes: []
+      };
+      
+      // Let's convert the syllabus file to base64 if it exists
+      if (syllabus) {
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+          reader.onload = () => {
+            const base64String = reader.result as string;
+            resolve(base64String);
+          };
+        });
+        
+        reader.readAsDataURL(syllabus);
+        courseData.syllabusPDF = await base64Promise;
+      }
+      
+      // Send to API
+      const response = await authFetch('/api/courses', {
+        method: 'POST',
+        body: JSON.stringify(courseData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create course');
+      }
+      
+      const result = await response.json();
+      
+      // Call the onAddCourse callback with the created course
+      onAddCourse(result.course);
+      
+      // Reset form
+      setCourseName('');
+      setDescription('');
+      setInstructor('');
+      setTimeSlots([]);
+      setSyllabus(null);
+      setError('');
+      
+      // Close modal
+      onClose();
+    } catch (err) {
+      console.error('Error creating course:', err);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -81,14 +217,21 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
         
         <ScrollArea className="max-h-[calc(90vh-180px)]">
           <div className="grid gap-6 py-4 px-1">
+            {error && (
+              <div className="p-3 bg-red-100 border border-red-300 text-red-700 rounded">
+                {error}
+              </div>
+            )}
+            
             <div className="space-y-2">
-              <Label htmlFor="courseName">Course Name</Label>
+              <Label htmlFor="courseName">Course Name <span className="text-red-500">*</span></Label>
               <Input
                 id="courseName"
                 placeholder="e.g., Introduction to Computer Science"
                 value={courseName}
                 onChange={(e) => setCourseName(e.target.value)}
                 className="animate-fade-in"
+                required
               />
             </div>
             
@@ -146,8 +289,13 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onSave
         </ScrollArea>
         
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={!courseName}>Save Course</Button>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={!courseName.trim() || isSubmitting}
+          >
+            {isSubmitting ? 'Saving...' : 'Save Course'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
