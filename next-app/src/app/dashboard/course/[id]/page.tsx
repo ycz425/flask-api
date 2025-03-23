@@ -56,6 +56,7 @@ import { useForm } from "react-hook-form";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { authFetch } from '@/lib/utils/auth-fetch';
 import { useAuth } from '@/lib/auth-context';
+import { uploadFileForAnalysis } from '@/lib/utils/file-upload';
 
 // Interface for course data from API
 interface CourseData {
@@ -255,20 +256,101 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
   const lectureForm = useForm({
     defaultValues: {
-      title: "",
-      lectureNumber: "",
       date: "",
       file: null as File | null
     }
   });
+  
+  // Debug state to see if file is being set
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
-  const handleAddLecture = (data: any) => {
-    console.log("New lecture:", data);
-    toast({
-      title: "Lecture Added",
-      description: `${data.title} has been added to your lectures.`,
-      duration: 3000,
-    });
+  const handleAddLecture = async (data: any) => {
+    try {
+      console.log("Form data:", data);
+      
+      if (!data.file) {
+        toast({
+          title: "Error",
+          description: "Please select a file to upload",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+
+      // Extract filename without extension as fallback title
+      const fileName = data.file.name;
+      const fileNameWithoutExt = fileName.split('.')[0];
+      
+      // Try to get title from the PDF using the Flask endpoint
+      let lectureTitle = fileNameWithoutExt;
+      try {
+        const titleFormData = new FormData();
+        titleFormData.append('file', data.file);
+        
+        const titleResponse = await fetch('/api/lecture-title', {
+          method: 'POST',
+          body: titleFormData
+        });
+        
+        if (titleResponse.ok) {
+          const titleData = await titleResponse.json();
+          if (titleData.title && titleData.title.trim() !== '') {
+            lectureTitle = titleData.title;
+            console.log("Got lecture title from API:", lectureTitle);
+          }
+        }
+      } catch (titleError) {
+        // If extracting title fails, we'll use the filename
+        console.log("Failed to extract title, using filename instead:", fileNameWithoutExt);
+      }
+
+      // Upload file to our simple Next.js API endpoint
+      const result = await uploadFileForAnalysis(data.file);
+      console.log("Upload result:", result);
+      
+      // Create a simplified lecture object for display
+      const newLecture = {
+        id: Date.now().toString(),
+        title: lectureTitle,
+        fileName: data.file.name,
+        date: data.date || new Date().toISOString().split('T')[0],
+        fileType: data.file.type,
+        summary: "File uploaded successfully. Analysis pending."
+      };
+      
+      // Add the new lecture to the course data
+      if (courseData && courseData.lectureNotes) {
+        setCourseData({
+          ...courseData,
+          lectureNotes: [newLecture, ...courseData.lectureNotes]
+        });
+      } else if (courseData) {
+        setCourseData({
+          ...courseData,
+          lectureNotes: [newLecture]
+        });
+      }
+      
+      // Reset the form state
+      lectureForm.reset();
+      setSelectedFileName(null);
+      
+      // Display success toast
+      toast({
+        title: "Lecture Added",
+        description: `${data.file.name} has been added to your lectures.`,
+        duration: 3000,
+      });
+    } catch (err) {
+      console.error("Error uploading lecture:", err);
+      toast({
+        title: "Error",
+        description: "Failed to upload lecture file. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   const assignmentForm = useForm({
@@ -516,10 +598,10 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-1.5 mr-4">
-                        <Plus className="h-4 w-4"/>
-                        <span>Add Lecture</span>
-                      </Button>
+                    <Button size="sm" className="flex items-center gap-1.5 mr-4 transition-transform hover:scale-105">
+                      <Plus className="h-4 w-4 transition-transform group-hover:rotate-90"/>
+                      <span>Add Lecture</span>
+                    </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
@@ -529,38 +611,10 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                         <form onSubmit={lectureForm.handleSubmit(handleAddLecture)} className="space-y-4">
                           <FormField
                             control={lectureForm.control}
-                            name="title"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Lecture Title</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Enter lecture title" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={lectureForm.control}
-                            name="lectureNumber"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Lecture Number</FormLabel>
-                                <FormControl>
-                                  <Input type="number" placeholder="1" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={lectureForm.control}
                             name="date"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Date</FormLabel>
+                                <FormLabel>Lecture Date</FormLabel>
                                 <FormControl>
                                   <Input type="date" {...field} />
                                 </FormControl>
@@ -570,19 +624,47 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                           />
                           
                           <div className="mb-4">
-                            <FormLabel>Upload File</FormLabel>
+                            <FormLabel>Upload Lecture File</FormLabel>
                             <div className="mt-2">
                               <FileUploader onFileUpload={(file) => {
+                                console.log("File selected:", file?.name || "No file");
                                 lectureForm.setValue('file', file);
+                                setSelectedFileName(file?.name || null);
                               }} />
                             </div>
+                            {selectedFileName && (
+                              <div className="mt-2 flex items-center justify-between">
+                                <span className="text-sm text-primary">
+                                  Selected file: {selectedFileName}
+                                </span>
+                                <Button 
+                                  type="button" 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    lectureForm.setValue('file', null);
+                                    setSelectedFileName(null);
+                                  }}
+                                >
+                                  Clear
+                                </Button>
+                              </div>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Upload PDF, DOCX, PPTX or TXT files
+                            </p>
                           </div>
                           
                           <DialogFooter>
                             <DialogClose asChild>
                               <Button type="button" variant="outline">Cancel</Button>
                             </DialogClose>
-                            <Button type="submit">Add Lecture</Button>
+                            <Button 
+                              type="submit"
+                              disabled={!selectedFileName}
+                            >
+                              Upload Lecture
+                            </Button>
                           </DialogFooter>
                         </form>
                       </Form>
@@ -644,8 +726,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-1.5 mr-4">
-                        <Plus className="h-4 w-4" />
+                      <Button size="sm" className="flex items-center gap-1.5 mr-4 transition-transform hover:scale-105">
+                        <Plus className="h-4 w-4 transition-transform group-hover:rotate-90"/>
                         <span>Add Assignment</span>
                       </Button>
                     </DialogTrigger>
@@ -768,8 +850,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-1.5 mr-4">
-                        <Plus className="h-4 w-4" />
+                      <Button size="sm" className="flex items-center gap-1.5 mr-4 transition-transform hover:scale-105">
+                        <Plus className="h-4 w-4 transition-transform group-hover:rotate-90"/>
                         <span>Add Assessment</span>
                       </Button>
                     </DialogTrigger>
