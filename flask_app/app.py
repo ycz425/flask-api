@@ -19,7 +19,7 @@ FILE_TYPES = [
 @app.route("/")
 def root():
     return jsonify({
-        "message": "Welcome to the Course Dash API."
+        "message": "Welcome to the CourseDash API."
     })
 
 

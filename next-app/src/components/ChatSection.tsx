@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from 'lucide-react';
-import { fetchAssistantResponse } from '@/api/api';
+
 
 interface Message {
   id: string;
@@ -15,7 +15,13 @@ interface Message {
 }
 
 export default function ChatSection() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([{
+    id: (Date.now() + 1).toString(),
+    content: "Welcome to your course chat! Ask questions about the course material or schedule.",
+    timestamp: new Date().toISOString(),
+    isUser: false
+  }]);
+
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -42,12 +48,24 @@ export default function ChatSection() {
     setIsLoading(true);
 
     try {
-      const response = await fetchAssistantResponse(inputMessage);
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: inputMessage,
+          course: "Course",
+          user_id: "userid"
+        }),
+      });
       
+      const data = await response.json()
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: response.message,
-        timestamp: response.timestamp,
+        content: data.message,
+        timestamp: data.timestamp,
         isUser: false
       };
 
