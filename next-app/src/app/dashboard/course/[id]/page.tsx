@@ -304,10 +304,6 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         // If extracting title fails, we'll use the filename
         console.log("Failed to extract title, using filename instead:", fileNameWithoutExt);
       }
-
-      // Upload file to our simple Next.js API endpoint
-      const result = await uploadFileForAnalysis(data.file);
-      console.log("Upload result:", result);
       
       // Create a simplified lecture object for display
       const newLecture = {
