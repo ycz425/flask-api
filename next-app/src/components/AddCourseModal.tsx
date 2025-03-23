@@ -171,21 +171,8 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onAddC
         courseData.syllabusPDF = await base64Promise;
       }
       
-      // Send to API
-      const response = await authFetch('/api/courses', {
-        method: 'POST',
-        body: JSON.stringify(courseData),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create course');
-      }
-      
-      const result = await response.json();
-      
-      // Call the onAddCourse callback with the created course
-      onAddCourse(result.course);
+      // Pass the courseData to parent component instead of making the API call
+      onAddCourse(courseData);
       
       // Reset form
       setCourseName('');
@@ -198,8 +185,8 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onAddC
       // Close modal
       onClose();
     } catch (err) {
-      console.error('Error creating course:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error('Error preparing course data:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }
