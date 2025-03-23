@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, CalendarClock, FileUp } from 'lucide-react';
+import { Trash2, CalendarClock, FileUp, X } from 'lucide-react';
 import TimeSelector, { TimeSlot } from './TimeSelector';
 
 interface CourseSettingsModalProps {
@@ -221,6 +221,26 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
     onClose();
   };
 
+  // Custom style for input wrappers
+  const inputWrapperStyle = {
+    position: 'relative',
+    width: '100%'
+  } as React.CSSProperties;
+
+  // Custom style for input elements to make them appear smaller inside their containers
+  const innerInputStyle = {
+    width: 'calc(100% - 16px)',
+    margin: '4px 8px',
+    height: 'calc(100% - 8px)',
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    border: 'none',
+    background: 'transparent',
+    outline: 'none',
+    boxShadow: 'none'
+  } as React.CSSProperties;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px] sm:max-h-[90vh]">
@@ -238,20 +258,30 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
             <TabsContent value="general" className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label htmlFor="courseName">Course Name</Label>
-                <Input 
-                  id="courseName"
-                  value={courseName} 
-                  onChange={(e) => setCourseName(e.target.value)}
-                />
+                <div style={inputWrapperStyle}>
+                  <Input 
+                    id="courseName"
+                    value={courseName} 
+                    onChange={(e) => setCourseName(e.target.value)}
+                    style={innerInputStyle}
+                    className="focus:ring-0"
+                  />
+                  <div className="w-full h-10 rounded-md border border-input opacity-100 pointer-events-none"></div>
+                </div>
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="instructor">Instructor</Label>
-                <Input 
-                  id="instructor"
-                  value={instructor} 
-                  onChange={(e) => setInstructor(e.target.value)}
-                />
+                <div style={inputWrapperStyle}>
+                  <Input 
+                    id="instructor"
+                    value={instructor} 
+                    onChange={(e) => setInstructor(e.target.value)}
+                    style={innerInputStyle}
+                    className="focus:ring-0"
+                  />
+                  <div className="w-full h-10 rounded-md border border-input opacity-100 pointer-events-none"></div>
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -288,10 +318,29 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
                 <Button 
                   variant="destructive" 
                   onClick={() => setShowRemoveConfirmation(true)}
-                  className="w-full justify-center"
+                  className="w-full justify-center group hover:bg-destructive/90"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Remove Course
+                  <div className="relative w-5 h-5 mr-2 flex items-center justify-center">
+                    {/* Animated X icon */}
+                    <div className="relative w-4 h-4 flex items-center justify-center">
+                      {/* First diagonal line of X */}
+                      <div className="absolute h-[2px] w-0 group-hover:w-full bg-current rounded-full 
+                                    transform rotate-45 origin-center transition-all duration-300"></div>
+                      
+                      {/* Second diagonal line of X */}
+                      <div className="absolute h-[2px] w-0 group-hover:w-full bg-current rounded-full 
+                                    transform -rotate-45 origin-center transition-all duration-300 delay-100"></div>
+                    </div>
+                    
+                    {/* Circle that expands on hover */}
+                    <div className="absolute w-full h-full rounded-full bg-current opacity-0 group-hover:opacity-10 
+                                  transform scale-0 group-hover:scale-100 transition-all duration-300"></div>
+                    
+                    {/* Outer pulsing effect */}
+                    <div className="absolute w-full h-full rounded-full border-2 border-current opacity-0
+                                  group-hover:opacity-20 group-hover:animate-pulse"></div>
+                  </div>
+                  <span className="group-hover:tracking-wider transition-all duration-300">Remove Course</span>
                 </Button>
               </div>
             </TabsContent>
@@ -328,9 +377,28 @@ const CourseSettingsModal: React.FC<CourseSettingsModalProps> = ({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRemoveConfirmation(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleConfirmRemove}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Remove Course
+            <Button variant="destructive" onClick={handleConfirmRemove} className="group hover:bg-destructive/90">
+              <div className="relative w-5 h-5 mr-2 flex items-center justify-center">
+                {/* Animated X icon */}
+                <div className="relative w-4 h-4 flex items-center justify-center">
+                  {/* First diagonal line of X */}
+                  <div className="absolute h-[2px] w-0 group-hover:w-full bg-current rounded-full 
+                                transform rotate-45 origin-center transition-all duration-300"></div>
+                  
+                  {/* Second diagonal line of X */}
+                  <div className="absolute h-[2px] w-0 group-hover:w-full bg-current rounded-full 
+                                transform -rotate-45 origin-center transition-all duration-300 delay-100"></div>
+                </div>
+                
+                {/* Circle that expands on hover */}
+                <div className="absolute w-full h-full rounded-full bg-current opacity-0 group-hover:opacity-10 
+                              transform scale-0 group-hover:scale-100 transition-all duration-300"></div>
+                
+                {/* Outer pulsing effect */}
+                <div className="absolute w-full h-full rounded-full border-2 border-current opacity-0
+                              group-hover:opacity-20 group-hover:animate-pulse"></div>
+              </div>
+              <span className="group-hover:tracking-wider transition-all duration-300">Remove Course</span>
             </Button>
           </DialogFooter>
         </DialogContent>
