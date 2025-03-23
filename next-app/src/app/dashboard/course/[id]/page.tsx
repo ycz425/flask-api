@@ -112,7 +112,8 @@ const parseCourseTimes = (times: string[] = []): Array<{type: string; day: strin
       if (!typeWithColon || !details) continue;
       
       const type = typeWithColon.trim();
-      const [day, timeRange] = details.trim().split(' ');
+      const [day, ...timeRangeParts] = details.trim().split(' ');
+      const timeRange = timeRangeParts.join(' ');
       if (!day || !timeRange) continue;
       
       result.push({
