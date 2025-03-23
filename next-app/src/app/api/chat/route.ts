@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
       
       return NextResponse.json({
         message: (await response.json()).response,
-        timestamp: new Date().toISOString()
+        timestamp: new Date()
       }, { status: 200 });
     } catch (error) {
       console.error('Error fetching assistant response:', error);

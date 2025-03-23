@@ -440,7 +440,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                     </h2>
                     
                     <div className="h-[480px]">
-                      <ChatSection />
+                      <ChatSection course={courseData.courseName} />
                     </div>
                   </div>
                   

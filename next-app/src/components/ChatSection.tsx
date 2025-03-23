@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from 'lucide-react';
+import { authFetch } from '@/lib/utils/auth-fetch';
 
+
+interface ChatSectionProps {
+  course: string
+}
 
 interface Message {
   id: string;
@@ -14,17 +19,17 @@ interface Message {
   isUser: boolean;
 }
 
-export default function ChatSection() {
+const ChatSection: React.FC<ChatSectionProps> = ({ course }) => {
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
   const [messages, setMessages] = useState<Message[]>([{
     id: (Date.now() + 1).toString(),
     content: "Welcome to your course chat! Ask questions about the course material or schedule.",
     timestamp: new Date().toISOString(),
     isUser: false
   }]);
-
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Scroll to bottom when new messages are added
@@ -48,15 +53,15 @@ export default function ChatSection() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await authFetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           query: inputMessage,
-          course: "Course",
-          user_id: "userid"
+          course: course,
+          user_id: JSON.parse(localStorage.getItem("auth_user")!).id
         }),
       });
       
@@ -85,6 +90,10 @@ export default function ChatSection() {
     }
   };
 
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <div className="flex flex-col h-full">
       <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
@@ -103,7 +112,7 @@ export default function ChatSection() {
               >
                 <p className="text-sm">{message.content}</p>
                 <p className="text-xs mt-1 opacity-70">
-                  {new Date(message.timestamp).toLocaleTimeString()}
+                  {formatTime(new Date(message.timestamp))}
                 </p>
               </div>
             </div>
@@ -143,3 +152,5 @@ export default function ChatSection() {
     </div>
   );
 }
+
+export default ChatSection
