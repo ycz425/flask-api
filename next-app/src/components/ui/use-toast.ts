@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import * as React from "react"
 
 import type {
@@ -187,3 +188,8 @@ function useToast() {
 }
 
 export { useToast, toast }
+=======
+import { useToast, toast } from "@/hooks/use-toast";
+
+export { useToast, toast };
+>>>>>>> ddf2cd83b60d633298316a12ea312fd47865171c
