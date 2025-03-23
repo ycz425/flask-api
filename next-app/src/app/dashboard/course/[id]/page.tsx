@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -23,7 +23,8 @@ import {
   Award,
   Settings,
   Plus,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { 
@@ -53,79 +54,84 @@ import {
 } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { authFetch } from '@/lib/utils/auth-fetch';
+import { useAuth } from '@/lib/auth-context';
 
-// Mock data - in a real Next.js app, this could be moved to a separate file or fetched from an API
-const mockCourses = {
-  "1": {
-    id: "1",
-    title: "Introduction to Computer Science",
-    description: "Fundamental concepts of computer science, including algorithms, data structures, and computational thinking.",
-    schedule: "Mon, Wed 10:00-11:30",
-    instructor: "Dr. Smith",
-    lectureCount: 5,
-    summaries: [
-      {
-        id: "s1",
-        title: "Introduction to Algorithms",
-        fileName: "algorithms_intro.pdf",
-        date: "September 15, 2023",
-        fileType: "PDF",
-        summary: "This lecture introduces the fundamental concepts of algorithms. It covers the definition of algorithms, their importance in computer science, common algorithm design paradigms, and basic examples. Key topics include time and space complexity analysis, Big O notation, and how to evaluate algorithm efficiency. The lecture also briefly introduces sorting algorithms and their comparative analysis."
-      },
-      {
-        id: "s2",
-        title: "Data Structures Overview",
-        fileName: "data_structures.pdf",
-        date: "September 22, 2023",
-        fileType: "PDF",
-        summary: "An overview of fundamental data structures including arrays, linked lists, stacks, queues, trees, and graphs. The lecture explains how these structures store and organize data, and discusses their advantages and limitations."
-      }
-    ],
-    assignments: [
-      {
-        id: "a1",
-        title: "Algorithm Implementation",
-        description: "Implement three sorting algorithms and compare their performance",
-        dueDate: "October 5, 2023",
-        status: "pending"
-      }
-    ],
-    assessments: [
-      {
-      title: "Midterm Examination",
-      date: "October 15, 2023",
-      exactDate: "2023-10-15T14:00:00",
-      location: "Main Hall, Building A"
-      }
-    ]
-  },
-  "2": {
-    id: "2",
-    title: "Calculus I",
-    description: "Introduction to differential and integral calculus, including limits, derivatives, and applications.",
-    schedule: "Tue, Thu 14:00-15:30",
-    instructor: "Dr. Johnson",
-    lectureCount: 3,
-    summaries: [],
-    assignments: [],
-    assessments: {
-      title: "Quiz 1",
-      date: "September 28, 2023",
-      exactDate: "2023-09-28T10:00:00",
-      location: "Room 204, Math Building"
-    }
-  }
-};
+// Interface for course data from API
+interface CourseData {
+  _id: string;
+  courseName: string;
+  courseDescription: string;
+  profName: string;
+  times: string[];
+  createdAt: string;
+  updatedAt: string;
+  syllabusPDF?: string;
+  lectureNotes?: Array<{
+    id: string;
+    title: string;
+    fileName: string;
+    date: string;
+    fileType: string;
+    summary: string;
+  }>;
+  assignments?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    dueDate: string;
+    status: string;
+  }>;
+  assessments?: Array<{
+    title: string;
+    date: string;
+    exactDate: string;
+    location: string;
+  }>;
+}
 
 // Props interface for the page component
 interface CourseDetailPageProps {
   params: {
-    courseId: string;
+    id: string;
   };
 }
 
+// Function to parse lecture times to create sessions
+const parseCourseTimes = (times: string[] = []): Array<{type: string; day: string; time: string}> => {
+  const result = [];
+  
+  if (!times || !Array.isArray(times)) return result;
+  
+  for (const time of times) {
+    try {
+      if (!time || typeof time !== 'string') continue;
+      
+      const [typeWithColon, details] = time.split(':');
+      if (!typeWithColon || !details) continue;
+      
+      const type = typeWithColon.trim();
+      const [day, timeRange] = details.trim().split(' ');
+      if (!day || !timeRange) continue;
+      
+      result.push({
+        type: type === 'lecture' ? 'Lecture' : 
+              type === 'tutorial' ? 'Tutorial' : 
+              type === 'officehours' ? 'Office Hours' : 
+              type.charAt(0).toUpperCase() + type.slice(1),
+        day,
+        time: timeRange
+      });
+    } catch (err) {
+      console.error("Error parsing time:", time, err);
+    }
+  }
+  
+  return result;
+}
+
 export default function CourseDetailPage({ params }: CourseDetailPageProps) {
-  const { courseId } = params;
+  const { id } = params;
   const [activeTab, setActiveTab] = useState("summary");
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showingQuiz, setShowingQuiz] = useState(false);
@@ -134,21 +140,52 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     fromLecture: 1,
     toLecture: 5
   });
+  const [courseData, setCourseData] = useState<CourseData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  // Fetch course data
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await authFetch(`/api/courses/${id}`);
+        
+        if (!response.ok) {
+          throw new Error(response.status === 404 ? 'Course not found' : 'Failed to fetch course data');
+        }
+        
+        const data = await response.json();
+        console.log('Course data:', data);
+        setCourseData(data.course);
+      } catch (err) {
+        console.error('Error fetching course:', err);
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (id) {
+      fetchCourseData();
+    }
+  }, [id]);
   
-  const course = mockCourses[courseId as keyof typeof mockCourses] || {
-    id: "not-found",
-    title: "Course Not Found",
-    description: "",
-    schedule: "",
-    instructor: "",
-    lectureCount: 0,
-    summaries: [],
-    assignments: [],
-    assessments: null
-  };
+  // Parse sessions from course times
+  const sessions = courseData?.times ? parseCourseTimes(courseData.times) : [];
   
+  // Extract next assessment (exam/quiz) if exists
+  const nextAssessment = courseData?.assessments?.[0] || null;
+  
+  // Extract next assignment if exists
+  const nextAssignment = courseData?.assignments?.[0] || null;
+
   const handleFileUpload = (file: File) => {
     console.log("File uploaded:", file.name);
     toast({
@@ -158,14 +195,32 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     });
   };
 
-  const handleRemoveCourse = () => {
-    toast({
-      title: "Course Removed",
-      description: `${course.title} has been removed from your courses.`,
-      duration: 3000,
-    });
-    
-    router.push('/');
+  const handleRemoveCourse = async () => {
+    try {
+      const response = await authFetch(`/api/courses/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete course');
+      }
+      
+      toast({
+        title: "Course Removed",
+        description: `${courseData?.courseName || 'Course'} has been removed from your courses.`,
+        duration: 3000,
+      });
+      
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Error removing course:', err);
+      toast({
+        title: "Error",
+        description: "Failed to remove course. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   const handleScheduleChange = (newSchedule: Array<{day: string, time: string}>) => {
@@ -253,35 +308,96 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     });
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-pattern animate-fade-in">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 pt-24 pb-16 flex justify-center items-center">
+          <div className="text-center py-12">
+            <div className="w-12 h-12 border-t-4 border-blue-500 border-solid rounded-full animate-spin mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading course details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-pattern animate-fade-in">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 pt-24 pb-16">
+          <Link href="/dashboard" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 animate-slide-right">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Courses
+          </Link>
+          <div className="bg-white rounded-lg shadow-soft border p-8 animate-fade-in animate-delay-200 text-center">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Error Loading Course</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={() => router.push('/dashboard')}>
+              Return to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No course data
+  if (!courseData) {
+    return (
+      <div className="min-h-screen bg-pattern animate-fade-in">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 pt-24 pb-16">
+          <Link href="/dashboard" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 animate-slide-right">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Courses
+          </Link>
+          <div className="bg-white rounded-lg shadow-soft border p-8 animate-fade-in animate-delay-200 text-center">
+            <AlertTriangle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Course Not Found</h2>
+            <p className="text-gray-600 mb-4">The course you're looking for couldn't be found.</p>
+            <Button onClick={() => router.push('/dashboard')}>
+              Return to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-pattern animate-fade-in">
       <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-16">
         <div className="mb-4">
-          <Link href="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 animate-slide-right">
+          <Link href="/dashboard" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 animate-slide-right">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Courses
           </Link>
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-4">
             <div className="animate-slide-up">
-              <h1 className="text-2xl font-bold mb-1">{course.title}</h1>
-              <p className="text-muted-foreground text-sm">{course.description}</p>
+              <h1 className="text-2xl font-bold mb-1">{courseData.courseName}</h1>
+              <p className="text-muted-foreground text-sm">{courseData.courseDescription}</p>
             </div>
             
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground animate-slide-up animate-delay-100">
-              {course.schedule && (
+              {sessions.length > 0 && (
                 <div className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
-                  <span>{course.schedule}</span>
+                  <span>{sessions[0].day} {sessions[0].time}</span>
                 </div>
               )}
               
-              {course.instructor && (
+              {courseData.profName && (
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4" />
-                  <span>{course.instructor}</span>
+                  <span>{courseData.profName}</span>
                 </div>
               )}
               
@@ -327,16 +443,16 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   </div>
                   
                   <div>
-                    {course.assessments && (
+                    {nextAssessment && (
                       <div className="mb-3">
                         <h2 className="text-lg font-semibold mb-2 flex items-center">
                           <Award className="h-5 w-5 mr-2" />
                           Next Exam
                         </h2>
                         <div className="p-3 border rounded-lg bg-primary/5 border-primary/20">
-                          <p className="font-medium">{course.assessments[0].title}</p>
+                          <p className="font-medium">{nextAssessment.title}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(course.assessments[0].date).toLocaleDateString('en-US', {
+                            {new Date(nextAssessment.exactDate).toLocaleDateString('en-US', {
                               weekday: 'long',
                               year: 'numeric',
                               month: 'long',
@@ -345,21 +461,21 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                               minute: '2-digit'
                             })}
                           </p>
-                          <p className="text-xs text-muted-foreground">{course.assessments[0].location}</p>
+                          <p className="text-xs text-muted-foreground">{nextAssessment.location}</p>
                         </div>
                       </div>
                     )}
 
-                    {course.assignments && course.assignments.length > 0 && (
+                    {nextAssignment && (
                       <div className="mb-3">
                         <h2 className="text-lg font-semibold mb-2 flex items-center">
                           <FileText className="h-5 w-5 mr-2" />
                           Upcoming Assignment
                         </h2>
                         <div className="p-3 border rounded-lg bg-primary/5 border-primary/20">
-                          <p className="font-medium">{course.assignments[0].title}</p>
-                          <p className="text-xs mt-1">{course.assignments[0].description}</p>
-                          <p className="text-xs text-muted-foreground mt-1">Due: {course.assignments[0].dueDate}</p>
+                          <p className="font-medium">{nextAssignment.title}</p>
+                          <p className="text-xs mt-1">{nextAssignment.description}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Due: {nextAssignment.dueDate}</p>
                         </div>
                       </div>
                     )}
@@ -370,20 +486,18 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                     </h2>
                     
                     <div className="space-y-2">
-                      <div className="p-3 border rounded-lg bg-muted/10">
-                        <p className="font-medium">Lecture</p>
-                        <p className="text-xs text-muted-foreground mt-1">Monday, 10:00 AM</p>
-                      </div>
-                      
-                      <div className="p-3 border rounded-lg bg-muted/10">
-                        <p className="font-medium">Tutorial</p>
-                        <p className="text-xs text-muted-foreground mt-1">Wednesday, 2:00 PM</p>
-                      </div>
-                      
-                      <div className="p-3 border rounded-lg bg-muted/10">
-                        <p className="font-medium">Office Hours</p>
-                        <p className="text-xs text-muted-foreground mt-1">Friday, 11:00 AM</p>
-                      </div>
+                      {sessions.length > 0 ? (
+                        sessions.slice(0, 3).map((session, index) => (
+                          <div key={index} className="p-3 border rounded-lg bg-muted/10">
+                            <p className="font-medium">{session.type}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{session.day}, {session.time}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-3 border rounded-lg bg-muted/10">
+                          <p className="text-sm text-muted-foreground">No scheduled sessions</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -474,9 +588,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   </Dialog>
                 </div>
                 
-                {course.summaries.length > 0 ? (
+                {courseData.lectureNotes && courseData.lectureNotes.length > 0 ? (
                   <div className="space-y-3">
-                    {course.summaries.map(summary => (
+                    {courseData.lectureNotes.map(summary => (
                       <Collapsible key={summary.id} className="border rounded-lg overflow-hidden">
                         <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 focus:outline-none">
                           <div>
@@ -588,9 +702,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   </Dialog>
                 </div>
                 
-                {course.assignments && course.assignments.length > 0 ? (
+                {courseData.assignments && courseData.assignments.length > 0 ? (
                   <div className="space-y-3">
-                    {course.assignments.map(assignment => (
+                    {courseData.assignments.map(assignment => (
                       <Collapsible key={assignment.id} className="border rounded-lg overflow-hidden">
                         <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 focus:outline-none">
                           <div>
@@ -800,13 +914,15 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </div>
       </main>
       
-      <CourseSettingsModal 
-        isOpen={showSettingsDialog}
-        onClose={() => setShowSettingsDialog(false)}
-        course={course}
-        onRemoveCourse={handleRemoveCourse}
-        onScheduleChange={handleScheduleChange}
-      />
+      {showSettingsDialog && (
+        <CourseSettingsModal
+          isOpen={showSettingsDialog}
+          onClose={() => setShowSettingsDialog(false)}
+          onRemoveCourse={handleRemoveCourse}
+          onScheduleChange={handleScheduleChange}
+          currentSchedule={[]}
+        />
+      )}
     </div>
   );
 }

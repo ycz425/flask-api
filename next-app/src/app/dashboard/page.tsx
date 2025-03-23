@@ -125,7 +125,7 @@ export default function DashboardPage() {
   };
 
   const handleCourseClick = (courseId: string) => {
-    router.push(`/course/${courseId}`);
+    router.push(`/dashboard/course/${courseId}`);
   };
 
   return (
