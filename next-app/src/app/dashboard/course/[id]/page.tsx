@@ -98,40 +98,45 @@ interface CourseDetailPageProps {
   };
 }
 
-// Function to parse lecture times to create sessions
-const parseCourseTimes = (times: string[] = []): Array<{type: string; day: string; time: string}> => {
-  // Define the return type explicitly to fix linter errors
-  const result: Array<{type: string; day: string; time: string}> = [];
-  
-  if (!times || !Array.isArray(times)) return result;
-  
+const parseCourseTimes = (times: string[] = []): Array<{ type: string; day: string; time: string }> => {
+  const result: Array<{ type: string; day: string; time: string }> = [];
+
+  if (!Array.isArray(times)) {
+    console.error("Invalid input: times is not an array", times);
+    return result;
+  }
+
   for (const time of times) {
     try {
-      if (!time || typeof time !== 'string') continue;
-      
-      const [typeWithColon, details] = time.split(':');
+      console.log("Processing time:", time); // Debugging log
+
+      if (typeof time !== 'string' || !time.includes(':')) continue;
+
+      // Use regex split to only split on the first colon
+      const [typeWithColon, details] = time.split(/:(.+)/).map(str => str.trim());
       if (!typeWithColon || !details) continue;
-      
-      const type = typeWithColon.trim();
-      const [day, ...timeRangeParts] = details.trim().split(' ');
-      const timeRange = timeRangeParts.join(' ');
-      if (!day || !timeRange) continue;
-      
+
+      const type = typeWithColon.toLowerCase();
+
       result.push({
-        type: type === 'lecture' ? 'Lecture' : 
-              type === 'tutorial' ? 'Tutorial' : 
-              type === 'officehours' ? 'Office Hours' : 
-              type.charAt(0).toUpperCase() + type.slice(1),
-        day,
-        time: timeRange
+        type: type === 'lecture' ? 'Lecture' :
+              type === 'tutorial' ? 'Tutorial' :
+              type === 'officehours' ? 'Office Hours' :
+              type.charAt(0).toUpperCase() + type.slice(1), 
+        day: details.split(' ')[0],  // Extracts "Wed" or "Thu"
+        time: details.substring(details.indexOf(' ') + 1) // Extracts full time "8:00-09:00"
       });
+
     } catch (err) {
       console.error("Error parsing time:", time, err);
     }
   }
-  
+
+  console.log("Final parsed output:", result); // Debugging log
   return result;
-}
+};
+
+
 
 export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { id } = params;
@@ -181,6 +186,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   }, [id]);
   
   // Parse sessions from course times
+  // console.log(courseData)
+  console.log(courseData?.times)
+  console.log(parseCourseTimes(['lecture: Wed 8:00-09:00', 'lecture: Thu 9:00-10:00']));
   const sessions = courseData?.times ? parseCourseTimes(courseData.times) : [];
   
   // Extract next assessment (exam/quiz) if exists
