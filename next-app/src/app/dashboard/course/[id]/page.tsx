@@ -108,7 +108,7 @@ const mockCourses = {
     lectureCount: 3,
     summaries: [],
     assignments: [],
-    nextExam: {
+    assessments: {
       title: "Quiz 1",
       date: "September 28, 2023",
       exactDate: "2023-09-28T10:00:00",
@@ -146,7 +146,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     lectureCount: 0,
     summaries: [],
     assignments: [],
-    nextExam: null
+    assessments: null
   };
   
   const handleFileUpload = (file: File) => {
@@ -327,16 +327,16 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   </div>
                   
                   <div>
-                    {course.nextExam && (
+                    {course.assessments && (
                       <div className="mb-3">
                         <h2 className="text-lg font-semibold mb-2 flex items-center">
                           <Award className="h-5 w-5 mr-2" />
                           Next Exam
                         </h2>
                         <div className="p-3 border rounded-lg bg-primary/5 border-primary/20">
-                          <p className="font-medium">{course.nextExam.title}</p>
+                          <p className="font-medium">{course.assessments[0].title}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(course.nextExam.exactDate).toLocaleDateString('en-US', {
+                            {new Date(course.assessments[0].date).toLocaleDateString('en-US', {
                               weekday: 'long',
                               year: 'numeric',
                               month: 'long',
@@ -345,7 +345,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                               minute: '2-digit'
                             })}
                           </p>
-                          <p className="text-xs text-muted-foreground">{course.nextExam.location}</p>
+                          <p className="text-xs text-muted-foreground">{course.assessments[0].location}</p>
                         </div>
                       </div>
                     )}
