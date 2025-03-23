@@ -9,7 +9,7 @@ import Navbar from '@/components/Navbar';
 import { authFetch } from '@/lib/utils/auth-fetch';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from "@/hooks/use-toast"
 import { Pointer } from "@/components/ui/coloured_pointer";
 
 interface Course {
